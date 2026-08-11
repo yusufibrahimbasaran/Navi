@@ -1,11 +1,19 @@
+var isVoiceInteraction = false;
+
 document.addEventListener("DOMContentLoaded", () => {
+// Configure marked.js to use highlight.js
+if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
+    marked.setOptions({
+        highlight: function(code, lang) {
+            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language }).value;
+        },
+        langPrefix: 'hljs language-'
+    });
+}
     const taskInput = document.getElementById('task-input');
     const runBtn = document.getElementById('run-btn');
     const clearBtn = document.getElementById('clear-btn');
-    const apiKeyInput = document.getElementById('apiKeyInput');
-    const groqKeyInput = document.getElementById('groqKeyInput');
-    const openaiKeyInput = document.getElementById('openaiKeyInput');
-    const anthropicKeyInput = document.getElementById('anthropicKeyInput');
     const chatBox = document.getElementById('chat-box');
     const themeToggle = document.getElementById('theme-toggle');
 
@@ -63,11 +71,26 @@ document.addEventListener("DOMContentLoaded", () => {
         wrapper.className = 'message-wrapper';
         const avatar = document.createElement('div');
         avatar.className = `avatar ${role}`;
-        avatar.innerHTML = role === 'user' ? '<i class="fa-regular fa-user"></i>' : '<i class="fa-solid fa-compass"></i>';
+        avatar.innerHTML = role === 'user' ? '<i class="fa-regular fa-user"></i>' : '<i class="fa-solid fa-circle-nodes"></i>';
+        const contentContainer = document.createElement('div');
+        contentContainer.style.display = 'flex';
+        contentContainer.style.flexDirection = 'column';
+        contentContainer.style.gap = '8px';
+        contentContainer.style.width = '100%';
+        
         const content = document.createElement('div');
         content.className = 'message-content';
+        contentContainer.appendChild(content);
+        
+        if (role === 'agent') {
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+            actions.innerHTML = `<button class="icon-btn" title="Sesli Oku" onclick="toggleSpeech(this)"><i class="fa-solid fa-volume-high"></i></button>`;
+            contentContainer.appendChild(actions);
+        }
+        
         wrapper.appendChild(avatar);
-        wrapper.appendChild(content);
+        wrapper.appendChild(contentContainer);
         chatBox.appendChild(wrapper);
         return content;
     }
@@ -104,7 +127,27 @@ document.addEventListener("DOMContentLoaded", () => {
             answerBox.innerHTML = text.replace(/\n/g, '<br>');
         }
         currentAgentMessageDiv.appendChild(answerBox);
+        addCopyButtons();
         scrollToBottom();
+    }
+
+// Function to add copy buttons to code blocks
+    function addCopyButtons() {
+        document.querySelectorAll('pre').forEach((preBlock) => {
+            if (preBlock.querySelector('.copy-code-btn')) return; // Already added
+            const btn = document.createElement('button');
+            btn.className = 'copy-code-btn';
+            btn.innerHTML = '<i class="fa-regular fa-copy"></i> Kopyala';
+            btn.onclick = () => {
+                const code = preBlock.querySelector('code');
+                const text = code ? code.innerText : preBlock.innerText.replace('Kopyala', '').trim();
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> Kopyalandı';
+                    setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> Kopyala'; }, 2000);
+                });
+            };
+            preBlock.appendChild(btn);
+        });
     }
 
     function scrollToBottom() {
@@ -114,23 +157,14 @@ document.addEventListener("DOMContentLoaded", () => {
     clearBtn.addEventListener('click', () => {
         conversationHistory = [];
         currentSessionId = null;
-        chatBox.innerHTML = `
-            <div class="welcome-screen">
-                <div class="welcome-icon-box">
-                    <i class="fa-solid fa-compass"></i>
-                </div>
-                <h1>Yeni Bir Sayfa Açtınız</h1>
-                <p>Navi hazır. Hangi konuyu keşfetmek istersiniz?</p>
-            </div>
-        `;
+        chatBox.innerHTML = `<div class="welcome-screen" id="welcome-screen"> <div class="welcome-icon-box pulse-animation"> <i class="fa-solid fa-circle-nodes"></i> </div> <h1 class="gradient-text">Merhaba, Ben Navi!</h1> <p>Fikirlerinizi gerçeğe dönüştürmek için tasarlanmış kişisel yapay zeka asistanınızım.<br>Aşağıdaki örneklerden biriyle başlayabilirsiniz:</p> <div class="prompt-suggestions"> <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Python ile yılan oyunu yaz</button> <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Kara delikler nasıl oluşur?</button> <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">1'den 100'e kadar asal sayıları bul</button> </div> </div>`;
     });
 
     runBtn.addEventListener('click', async () => {
         const question = taskInput.value.trim();
-        if (!question) return;
-
-        const welcome = document.querySelector('.welcome-screen');
-        if (welcome) welcome.remove();
+        if (question === "") return;
+        const welcome = document.getElementById("welcome-screen");
+        if(welcome) welcome.style.display = "none";
 
         runBtn.disabled = true;
         runBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -150,24 +184,28 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         scrollToBottom();
 
+        const modelChoice = document.getElementById('model-selector') ? document.getElementById('model-selector').value : "auto";
+
         try {
             const response = await fetch('/run', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     question: question, 
-                    api_key: apiKeyInput ? apiKeyInput.value.trim() : "",
-                    groq_key: groqKeyInput ? groqKeyInput.value.trim() : "",
-                    openai_key: openaiKeyInput ? openaiKeyInput.value.trim() : "",
-                    anthropic_key: anthropicKeyInput ? anthropicKeyInput.value.trim() : "",
                     history: conversationHistory,
-                    session_id: currentSessionId
+                    session_id: currentSessionId,
+                    image: selectedImageBase64,
+                    model_choice: modelChoice
                 })
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                addLogToAgent('error', errorData.error || 'Bilinmeyen bir hata oluştu.');
+                const errorMsg = errorData.error || 'Bilinmeyen bir sunucu hatası oluştu.';
+                addLogToAgent('error', errorMsg);
+                
+                // Ayrıca ana sohbet ekranında göster ki kullanıcı takıldığını düşünmesin
+                msgDiv.innerHTML = `<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`;
                 resetUI();
                 return;
             }
@@ -225,6 +263,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             conversationHistory.push({ role: 'user', content: question });
             conversationHistory.push({ role: 'model', content: finalAnswer });
+            
+            if (isVoiceInteraction) {
+                speakText(finalAnswer);
+                isVoiceInteraction = false;
+            }
 
         } catch (error) {
             const ti = document.getElementById("typing-indicator-wrapper");
@@ -488,6 +531,8 @@ document.addEventListener("DOMContentLoaded", () => {
         
         currentSessionId = id;
         chatBox.innerHTML = "";
+        const welcome = document.getElementById("welcome-screen");
+        if(welcome) welcome.style.display = "none";
         
         msgs.forEach(m => {
             const contentDiv = createMessageWrapper(m.role);
@@ -501,6 +546,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
         });
+        addCopyButtons();
         scrollToBottom();
     }
 
@@ -619,3 +665,285 @@ window.copyToClipboard = function(btn) {
         }, 2000);
     });
 };
+
+// --- Memory Functions ---
+async function openMemoryModal() {
+    const modal = document.getElementById("memory-modal");
+    if(modal) modal.classList.add("show");
+    await fetchMemories();
+}
+
+function closeMemoryModal() {
+    const modal = document.getElementById("memory-modal");
+    if(modal) modal.classList.remove("show");
+}
+
+async function fetchMemories() {
+    const res = await fetch("/api/memory");
+    const list = document.getElementById("memory-list");
+    if(!res.ok || !list) return;
+    
+    const memories = await res.json();
+    list.innerHTML = "";
+    if(memories.length === 0) {
+        list.innerHTML = "<li style='text-align:center; color:gray;'>Hen?z kaydedilmi? bir haf?za yok.</li>";
+        return;
+    }
+    
+    memories.forEach(m => {
+        const li = document.createElement("li");
+        li.className = "memory-item";
+        li.innerHTML = `
+            <span>${m.fact}</span>
+            <button onclick="deleteMemory(${m.id})" title="Sil"><i class="fa-solid fa-trash"></i></button>
+        `;
+        list.appendChild(li);
+    });
+}
+
+async function deleteMemory(id) {
+    if(confirm("Bu haf?zay? silmek istedi?inize emin misiniz?")) {
+        const res = await fetch("/api/memory/" + id, { method: "DELETE" });
+        if(res.ok) {
+            fetchMemories();
+        }
+    }
+}
+
+async function clearAllMemory() {
+    if(confirm("T?m haf?zay? kal?c? olarak silmek istedi?inize emin misiniz? Navi sizi tamamen unutacak.")) {
+        const res = await fetch("/api/memory/all", { method: "DELETE" });
+        if(res.ok) {
+            fetchMemories();
+        }
+    }
+}
+
+
+// --- Vision (Image Upload) Logic ---
+let selectedImageBase64 = null;
+const v_attachBtn = document.getElementById("attach-btn");
+const imageUpload = document.getElementById("image-upload");
+const imagePreviewContainer = document.getElementById("image-preview-container");
+const imagePreview = document.getElementById("image-preview");
+const removeImageBtn = document.getElementById("remove-image-btn");
+
+if (v_attachBtn && imageUpload) {
+    v_attachBtn.addEventListener("click", () => {
+        imageUpload.click();
+    });
+
+    imageUpload.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                selectedImageBase64 = event.target.result;
+                imagePreview.src = selectedImageBase64;
+                imagePreviewContainer.style.display = "block";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    removeImageBtn.addEventListener("click", () => {
+        selectedImageBase64 = null;
+        imageUpload.value = "";
+        imagePreviewContainer.style.display = "none";
+    });
+}
+
+
+// --- MOBILE UI LOGIC ---
+const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+const mobileBackdrop = document.getElementById("mobile-backdrop");
+const sidebarEl = document.querySelector(".sidebar");
+
+if (mobileMenuBtn && mobileBackdrop && sidebarEl) {
+    function openSidebar() {
+        sidebarEl.classList.add("mobile-open");
+        mobileBackdrop.classList.add("show");
+    }
+    
+    function closeSidebar() {
+        sidebarEl.classList.remove("mobile-open");
+        mobileBackdrop.classList.remove("show");
+    }
+    
+    mobileMenuBtn.addEventListener("click", openSidebar);
+    mobileBackdrop.addEventListener("click", closeSidebar);
+    
+    // Auto-close sidebar on mobile when a chat is clicked
+    const oldLoadChat = loadChat;
+    loadChat = async function(id) {
+        await oldLoadChat(id);
+        if (window.innerWidth <= 768) {
+            closeSidebar();
+        }
+    };
+    
+    // Auto-close when new chat button is clicked
+    const newChatBtnEl = document.getElementById("new-chat-btn");
+    if(newChatBtnEl) {
+        newChatBtnEl.addEventListener("click", () => {
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        });
+    }
+}
+
+
+// --- VOICE ASSISTANT (STT & TTS) ---
+const voiceBtn = document.getElementById("voice-btn");
+
+if (voiceBtn) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'tr-TR';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = function() {
+            voiceBtn.classList.add("listening");
+            taskInput.placeholder = "Dinliyorum...";
+            isVoiceInteraction = true;
+        };
+
+        recognition.onspeechend = function() {
+            recognition.stop();
+            voiceBtn.classList.remove("listening");
+            taskInput.placeholder = "Navi'ye mesaj g?nder...";
+        };
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            taskInput.value = transcript;
+            // Trigger send button automatically
+            sendBtn.click();
+        };
+
+        recognition.onerror = function(event) {
+            voiceBtn.classList.remove("listening");
+            taskInput.placeholder = "Navi'ye mesaj g?nder...";
+            console.error("Speech recognition error:", event.error);
+            isVoiceInteraction = false;
+        };
+
+        voiceBtn.addEventListener("click", () => {
+            if (voiceBtn.classList.contains("listening")) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+    } else {
+        voiceBtn.style.display = "none";
+        console.warn("Tarayici SpeechRecognition API'sini desteklemiyor.");
+    }
+}
+
+// --- ADVANCED TTS & TOGGLE ---
+let currentSpeakingBtn = null;
+
+function toggleSpeech(btn) {
+    if (!('speechSynthesis' in window)) return;
+    
+    if (currentSpeakingBtn === btn && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        btn.style.color = 'var(--text-secondary)';
+        currentSpeakingBtn = null;
+        return;
+    }
+    
+    window.speechSynthesis.cancel();
+    if (currentSpeakingBtn) {
+        currentSpeakingBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        currentSpeakingBtn.style.color = 'var(--text-secondary)';
+    }
+    
+    currentSpeakingBtn = btn;
+    btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+    btn.style.color = '#ef4444'; 
+    
+    const messageContent = btn.parentElement.previousElementSibling;
+    let textToSpeak = "";
+    
+    for (let node of messageContent.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            textToSpeak += node.textContent + " ";
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+            if (!node.classList.contains('log-box')) {
+                textToSpeak += node.innerText + " ";
+            }
+        }
+    }
+    textToSpeak = textToSpeak.trim();
+    if (!textToSpeak) {
+        // Fallback if somehow extraction failed
+        textToSpeak = messageContent.innerText; 
+    }
+    
+    setTimeout(() => {
+        _doSpeak(textToSpeak, () => {
+            if (currentSpeakingBtn === btn) {
+                btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                btn.style.color = 'var(--text-secondary)';
+                currentSpeakingBtn = null;
+            }
+        });
+    }, 50);
+}
+
+function speakText(text) {
+    if (currentSpeakingBtn) {
+        currentSpeakingBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        currentSpeakingBtn.style.color = 'var(--text-secondary)';
+        currentSpeakingBtn = null;
+    }
+    _doSpeak(text);
+}
+
+function _doSpeak(text, onEndCallback) {
+    if (!('speechSynthesis' in window)) return;
+    
+    let cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1') 
+                        .replace(/\*(.*?)\*/g, '$1') 
+                        .replace(/#(.*?)(\n|$)/g, '$1') 
+                        .replace(/\[(.*?)\]\(.*?\)/g, '$1') 
+                        .replace(/```[\s\S]*?```/g, 'Kod blogu kaldirildi.') 
+                        .replace(/`(.*?)`/g, '$1'); 
+                        
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'tr-TR';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    
+    if (onEndCallback) {
+        utterance.onend = onEndCallback;
+        utterance.onerror = onEndCallback;
+    }
+    
+    const voices = window.speechSynthesis.getVoices();
+    const trVoice = voices.find(v => v.lang.includes('tr') || v.lang.includes('TR'));
+    if (trVoice) {
+        utterance.voice = trVoice;
+    }
+    
+    // In Chrome, there's a bug where long texts stop halfway. 
+    // This is avoided if we don't have further cancel() issues, but let's just speak directly.
+    window.speechSynthesis.speak(utterance);
+}
+
+// Sidebar Collapse Logic
+{
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+    const mySidebarEl = document.querySelector('.sidebar');
+    if (sidebarToggleBtn && mySidebarEl) {
+        sidebarToggleBtn.addEventListener('click', () => {
+            mySidebarEl.classList.toggle('collapsed');
+        });
+    }
+}

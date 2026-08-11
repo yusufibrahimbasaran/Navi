@@ -4,26 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Navi | Yeni Nesil Yapay Zeka</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=9">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=47">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body class="dark-theme">
     <div class="app-container">
+        <!-- MOBILE BACKDROP -->
+        <div id="mobile-backdrop" class="mobile-backdrop"></div>
         
         <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <i class="fa-solid fa-compass ai-icon"></i>
+                    <i class="fa-solid fa-circle-nodes ai-icon"></i>
                     <h2>Navi</h2>
                 </div>
-                <button id="theme-toggle" class="icon-btn" title="Temayı Değiştir">
-                    <i class="fa-solid fa-moon"></i>
-                </button>
+                <div class="header-actions">
+                    <button id="theme-toggle" class="icon-btn" title="Temayı Değiştir">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                </div>
             </div>
             
             <div class="sidebar-content">
@@ -42,6 +48,12 @@
             </div>
 
             <div class="sidebar-footer">
+                <button class="sidebar-footer-btn" onclick="openMemoryModal()" style="margin-bottom: 8px;">
+                    <div class="btn-left">
+                        <div class="avatar-small" style="background: rgba(147, 51, 234, 0.2); color: var(--accent);"><i class="fa-solid fa-lock"></i></div>
+                        <span>Hafızam (Giriş Gerekli)</span>
+                    </div>
+                </button>
                 <button id="settings-modal-btn" class="sidebar-footer-btn">
                     <div class="btn-left">
                         <div class="avatar-small"><i class="fa-solid fa-gear"></i></div>
@@ -59,30 +71,94 @@
             <!-- TOP HEADER (Desktop & Mobile) -->
             <header class="main-header">
                 <div class="header-left">
-                    <!-- Sadece mobilde görünen ikon -->
-                    <span class="mobile-logo"><i class="fa-solid fa-compass"></i> Navi</span>
+                    <button id="sidebar-toggle" class="icon-btn" title="Men?y? Daralt/Geni?let">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <!-- Sadece mobilde g?r?nen ikon -->
+                    <span class="mobile-logo mobile-only"><i class="fa-solid fa-circle-nodes"></i> Navi</span>
                 </div>
                 <div class="header-right">
-                    <button id="login-modal-btn" class="pill-btn primary"><i class="fa-solid fa-user-astronaut"></i> Giriş Yap</button>
+                    <button id="login-modal-btn" class="pill-btn primary"><i class="fa-solid fa-user-astronaut"></i> Giri? Yap</button>
                 </div>
             </header>
 
             <div class="chat-container" id="chat-box">
-                <div class="welcome-screen">
-                    <div class="welcome-icon-box">
-                        <i class="fa-solid fa-compass"></i>
+                <div class="welcome-screen" id="welcome-screen">
+                    <div class="welcome-icon-box pulse-animation">
+                        <i class="fa-solid fa-circle-nodes"></i>
                     </div>
-                    <h1>Merhaba, Ben Navi!</h1>
-                    <p>Fikirlerinizi gerçeğe dönüştürmek için tasarlanmış kişisel zeka asistanınızım.<br>Nasıl bir yolculuğa çıkmak istersiniz?</p>
+                    <h1 class="gradient-text">Merhaba, Ben Navi!</h1>
+                    <p>Fikirlerinizi gerçeğe dönüştürmek için tasarlanmış kişisel yapay zeka asistanınızım.<br>Aşağıdaki örneklerden biriyle başlayabilirsiniz:</p>
+                    
+                    <div class="prompt-suggestions">
+                        <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Python ile yılan oyunu yaz</button>
+                        <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Kara delikler nasıl oluşur?</button>
+                        <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">1'den 100'e kadar asal sayıları bul</button>
+                    </div>
                 </div>
             </div>
 
             <div class="input-container">
+                <!-- Image Preview Container -->
+                <div id="image-preview-container" style="display: none; padding: 10px; padding-bottom: 0;">
+                    <div style="position: relative; display: inline-block;">
+                        <img id="image-preview" src="" alt="Önizleme" style="max-height: 80px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <button id="remove-image-btn" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+                
+                <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                
                 <div class="input-box">
                     <button id="attach-btn" class="icon-btn input-action-btn" title="Dosya Ekle">
                         <i class="fa-solid fa-plus"></i>
                     </button>
-                    <textarea id="task-input" placeholder="Ajanınıza bir görev verin..." rows="1"></textarea>
+                    <div class="custom-model-select">
+                        <div class="select-trigger" id="model-select-trigger" title="Model Seçimi">
+                            <span id="selected-model-text">✨ Oto</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                        <div class="select-options" id="model-options">
+                            <div class="option selected" data-value="auto">✨ Oto</div>
+                            <div class="option" data-value="gemini">🚀 Gemini</div>
+                            <div class="option" data-value="openai">🧠 GPT-4</div>
+                            <div class="option" data-value="anthropic">🎭 Claude</div>
+                            <div class="option" data-value="groq">⚡ Llama 3</div>
+                        </div>
+                        <input type="hidden" id="model-selector" value="auto">
+                    </div>
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function() {
+                            const customSelect = document.querySelector('.custom-model-select');
+                            const selectTrigger = document.getElementById('model-select-trigger');
+                            const options = document.querySelectorAll('.select-options .option');
+                            const hiddenInput = document.getElementById('model-selector');
+                            const selectedText = document.getElementById('selected-model-text');
+                            
+                            if (selectTrigger) {
+                                selectTrigger.addEventListener('click', (e) => {
+                                    customSelect.classList.toggle('open');
+                                    e.stopPropagation();
+                                });
+                                options.forEach(option => {
+                                    option.addEventListener('click', (e) => {
+                                        options.forEach(opt => opt.classList.remove('selected'));
+                                        option.classList.add('selected');
+                                        hiddenInput.value = option.dataset.value;
+                                        selectedText.textContent = option.textContent;
+                                        customSelect.classList.remove('open');
+                                        e.stopPropagation();
+                                    });
+                                });
+                                document.addEventListener('click', (e) => {
+                                    if (!customSelect.contains(e.target)) {
+                                        customSelect.classList.remove('open');
+                                    }
+                                });
+                            }
+                        });
+                    </script>
+                    <textarea id="task-input" placeholder="Bana her şeyi sorabilirsiniz..." rows="1"></textarea>
                     <button id="voice-btn" class="icon-btn input-action-btn" title="Sesli Arama">
                         <i class="fa-solid fa-microphone"></i>
                     </button>
@@ -144,39 +220,33 @@
             <button class="modal-close" id="settings-close-btn"><i class="fa-solid fa-xmark"></i></button>
             <h2 style="margin-bottom: 20px; font-size: 18px; color: var(--text-primary);">API Ayarları</h2>
             <div class="auth-form active">
-                <div class="settings-group">
-                    <label for="apiKeyInput">Gemini API Key</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-key"></i>
-                        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." autocomplete="off">
-                    </div>
+                <div style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                    <i class="fa-solid fa-shield-halved" style="font-size: 32px; color: var(--accent); margin-bottom: 10px;"></i>
+                    <p>API Anahtarları sunucu (.env) tarafından merkezi ve güvenli olarak yönetilmektedir.</p>
+                    <p style="margin-top: 10px; font-size: 13px;">Kullanıcıların kendi anahtarlarını girmesine gerek yoktur.</p>
                 </div>
-                <div class="settings-group">
-                    <label for="groqKeyInput">Groq API Key</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-bolt"></i>
-                        <input type="password" id="groqKeyInput" placeholder="gsk_..." autocomplete="off">
-                    </div>
-                </div>
-                <div class="settings-group">
-                    <label for="openaiKeyInput">OpenAI API Key</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-brain"></i>
-                        <input type="password" id="openaiKeyInput" placeholder="sk-proj-..." autocomplete="off">
-                    </div>
-                </div>
-                <div class="settings-group">
-                    <label for="anthropicKeyInput">Anthropic API Key</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-robot"></i>
-                        <input type="password" id="anthropicKeyInput" placeholder="sk-ant-..." autocomplete="off">
-                    </div>
-                </div>
-                <p style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;">Anahtarlarınız sadece bu oturum için geçerlidir ve sunucuda saklanmaz.</p>
             </div>
         </div>
     </div>
     
-    <script src="{{ url_for('static', filename='app.js') }}?v=17"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=47"></script>
+
+        <!-- Memory Modal -->
+    <div class="modal-overlay" id="memory-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeMemoryModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h2 style="margin-bottom: 20px; font-size: 18px; color: var(--text-primary);"><i class="fa-solid fa-brain"></i> Uzun Süreli Hafızam</h2>
+            <div class="auth-form active">
+                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 15px;">
+                    Navi'nin sizin hakkınızda öğrendiği bilgiler burada listelenir.
+                </p>
+                <ul id="memory-list" class="memory-list" style="margin-bottom: 10px;">
+                </ul>
+                <button class="primary-btn outline" onclick="clearAllMemory()" style="width: 100%; border-color: #ef4444; color: #ef4444;">
+                    <i class="fa-solid fa-trash-can"></i> Tüm Hafızayı Sil
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
