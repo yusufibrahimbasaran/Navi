@@ -3,3 +3,8 @@
 __pycache__/
 instance/
 scratch/
+
+faiss_db/
+uploads/
+static/chart.png
+test_file.txt

@@ -353,61 +353,7 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
             if(data.success) {
                 authModal.classList.remove("show");
             
-    // --- RAG FILE UPLOAD LOGIC ---
-    const attachBtn = document.getElementById('attach-btn');
-    const fileUpload = document.getElementById('file-upload');
-    const filePillContainer = document.getElementById('file-pill-container');
-    const filePillName = document.getElementById('file-pill-name');
-
-    if (attachBtn && fileUpload) {
-        attachBtn.addEventListener('click', () => {
-            fileUpload.click();
-        });
-
-        fileUpload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const originalIcon = attachBtn.innerHTML;
-            attachBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            attachBtn.disabled = true;
-            taskInput.disabled = true;
-
-            const formData = new FormData();
-            formData.append('file', file);
-            if (currentSessionId) {
-                formData.append('session_id', currentSessionId);
-            }
-
-            try {
-                const res = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    if (!currentSessionId && data.session_id) {
-                        currentSessionId = data.session_id;
-                        loadChatHistory();
-                    }
-                    filePillContainer.style.display = 'flex';
-                    filePillName.innerText = data.filename;
-                    addLogToAgent('action', `Belge ba?ar?yla haf?zaya al?nd?: ${data.filename}`);
-                } else {
-                    addLogToAgent('error', `Belge y?kleme ba?ar?s?z: ${data.error}`);
-                }
-            } catch (error) {
-                addLogToAgent('error', `Y?kleme hatas?: ${error.message}`);
-            } finally {
-                attachBtn.innerHTML = originalIcon;
-                attachBtn.disabled = false;
-                taskInput.disabled = false;
-                fileUpload.value = '';
-            }
-        });
-    }
-
+    
     // Hide file pill on new chat
     const originalClearBtnClick = clearBtn.onclick;
     clearBtn.addEventListener('click', () => {
@@ -550,61 +496,7 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
         scrollToBottom();
     }
 
-    // --- RAG FILE UPLOAD LOGIC ---
-    const attachBtn = document.getElementById('attach-btn');
-    const fileUpload = document.getElementById('file-upload');
-    const filePillContainer = document.getElementById('file-pill-container');
-    const filePillName = document.getElementById('file-pill-name');
-
-    if (attachBtn && fileUpload) {
-        attachBtn.addEventListener('click', () => {
-            fileUpload.click();
-        });
-
-        fileUpload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const originalIcon = attachBtn.innerHTML;
-            attachBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            attachBtn.disabled = true;
-            taskInput.disabled = true;
-
-            const formData = new FormData();
-            formData.append('file', file);
-            if (currentSessionId) {
-                formData.append('session_id', currentSessionId);
-            }
-
-            try {
-                const res = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    if (!currentSessionId && data.session_id) {
-                        currentSessionId = data.session_id;
-                        loadChatHistory();
-                    }
-                    filePillContainer.style.display = 'flex';
-                    filePillName.innerText = data.filename;
-                    addLogToAgent('action', `Belge başarıyla hafızaya alındı: ${data.filename}`);
-                } else {
-                    addLogToAgent('error', `Belge yükleme başarısız: ${data.error}`);
-                }
-            } catch (error) {
-                addLogToAgent('error', `Yükleme hatası: ${error.message}`);
-            } finally {
-                attachBtn.innerHTML = originalIcon;
-                attachBtn.disabled = false;
-                taskInput.disabled = false;
-                fileUpload.value = '';
-            }
-        });
-    }
-
+    
     // Hide file pill on new chat
     const originalClearBtnClick = clearBtn.onclick;
     clearBtn.addEventListener('click', () => {
@@ -647,6 +539,94 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
             if (e.target === settingsModal) settingsModal.classList.remove("show");
         });
     }
+// --- RAG Document Upload Logic ---
+let selectedImageBase64 = null; // Keep this variable as it's used in the payload
+const attachBtn = document.getElementById("attach-btn");
+const documentUpload = document.getElementById("document-upload");
+const filePillContainer = document.getElementById("file-pill-container");
+const filePillName = document.getElementById("file-pill-name");
+const removeFileBtn = document.getElementById("remove-file-btn");
+
+if (attachBtn && documentUpload) {
+    attachBtn.addEventListener("click", () => {
+        documentUpload.click();
+    });
+
+    documentUpload.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Eger resimse (multimodal), onceki vision mantigini islet
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                selectedImageBase64 = event.target.result;
+                if (filePillContainer && filePillName) {
+                    filePillName.textContent = file.name;
+                    filePillContainer.style.display = "flex";
+                }
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        // Dosya eklendi efekti
+        const originalIcon = attachBtn.innerHTML;
+        attachBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        attachBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("session_id", currentSessionId || "");
+
+        try {
+            const response = await fetch("/api/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.session_id && !currentSessionId) {
+                    currentSessionId = data.session_id;
+                    loadChatHistory();
+                }
+
+                if (filePillContainer && filePillName) {
+                    filePillName.textContent = file.name;
+                    filePillContainer.style.display = "flex";
+                }
+                
+                const msgDiv = createMessageWrapper('agent');
+                msgDiv.innerHTML = `<span style="color: var(--accent);">📎 ${file.name} başarıyla sisteme yüklendi ve analiz edildi. Artık bu belge hakkında sorular sorabilirsiniz.</span>`;
+                scrollToBottom();
+            } else {
+                const errDiv = createMessageWrapper('agent');
+                errDiv.innerHTML = `<span style="color: red;">❌ Dosya yüklenirken hata oluştu: ${data.error || ""}</span>`;
+                scrollToBottom();
+            }
+        } catch (error) {
+            const errDiv = createMessageWrapper('agent');
+            errDiv.innerHTML = `<span style="color: red;">❌ Sunucu bağlantı hatası.</span>`;
+            scrollToBottom();
+            console.error(error);
+        } finally {
+            attachBtn.innerHTML = originalIcon;
+            attachBtn.disabled = false;
+        }
+    });
+
+    if (removeFileBtn) {
+        removeFileBtn.addEventListener("click", () => {
+            selectedImageBase64 = null;
+            if (filePillContainer) filePillContainer.style.display = "none";
+            if (documentUpload) documentUpload.value = "";
+        });
+    }
+}
+
+
 });
 
 // --- GLOBAL COPY FUNCTION ---
@@ -717,40 +697,6 @@ async function clearAllMemory() {
             fetchMemories();
         }
     }
-}
-
-
-// --- Vision (Image Upload) Logic ---
-let selectedImageBase64 = null;
-const v_attachBtn = document.getElementById("attach-btn");
-const imageUpload = document.getElementById("image-upload");
-const imagePreviewContainer = document.getElementById("image-preview-container");
-const imagePreview = document.getElementById("image-preview");
-const removeImageBtn = document.getElementById("remove-image-btn");
-
-if (v_attachBtn && imageUpload) {
-    v_attachBtn.addEventListener("click", () => {
-        imageUpload.click();
-    });
-
-    imageUpload.addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                selectedImageBase64 = event.target.result;
-                imagePreview.src = selectedImageBase64;
-                imagePreviewContainer.style.display = "block";
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    removeImageBtn.addEventListener("click", () => {
-        selectedImageBase64 = null;
-        imageUpload.value = "";
-        imagePreviewContainer.style.display = "none";
-    });
 }
 
 

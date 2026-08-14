@@ -107,8 +107,12 @@
                     </div>
                 </div>
                 
-                <input type="file" id="image-upload" accept="image/*" style="display: none;">
-                
+                <input type="file" id="document-upload" accept="image/*,.pdf,.txt,.md" style="display: none;">
+                <div id="file-pill-container" style="display: none; align-items: center; background: rgba(149, 29, 209, 0.2); color: var(--accent); padding: 5px 12px; border-radius: 12px; margin-bottom: 10px; font-size: 13px;">
+                    <i class="fa-solid fa-file-pdf" style="margin-right: 6px;"></i>
+                    <span id="file-pill-name" style="margin-right: 10px; font-weight: 500;"></span>
+                    <button id="remove-file-btn" style="background: none; border: none; color: var(--accent); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+                </div>
                 <div class="input-box">
                     <button id="attach-btn" class="icon-btn input-action-btn" title="Dosya Ekle">
                         <i class="fa-solid fa-plus"></i>
@@ -229,7 +233,7 @@
         </div>
     </div>
     
-    <script src="{{ url_for('static', filename='app.js') }}?v=47"></script>
+    <script src="/static/app.js?v=53"></script>
 
         <!-- Memory Modal -->
     <div class="modal-overlay" id="memory-modal">

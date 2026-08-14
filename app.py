@@ -403,7 +403,7 @@ def run_task():
     anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
     model_choice = data.get("model_choice", "auto")
 
-    gemini_model = ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0) if api_key else None
+    gemini_model = ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0, max_retries=5) if api_key else None
     openai_model = ChatOpenAI(model="gpt-4o-mini", temperature=0) if openai_key else None
     anthropic_model = ChatAnthropic(model="claude-3-5-sonnet-20240620", temperature=0) if anthropic_key else None
     
@@ -512,28 +512,41 @@ def run_task():
         math_prompt = dynamic_prompt + "\n[GOREV: MATEMATIKCI]\nSadece matematik problemleri coz."
         general_prompt = dynamic_prompt + "\n[GOREV: GENEL ASISTAN]\nSohbet et ve gerekirse hafiza kaydet."
         coder_prompt = dynamic_prompt + "\n[GOREV: YAZILIMCI]\nSen bir Python uzmanisin. Istenen isleri yapmak veya veri analizi/hesaplama gerceklestirmek icin Python kodu yaz ve 'execute_python_code' araciyla calistirarak sonucunu ogren. Cikti almak icin print() kullanmayi unutma."
+        
+        polaris_tools = request_tools.copy()
+        polaris_prompt = dynamic_prompt + """
+[GOREV: POLARIS (BAŞ MİMAR)]
+Sen Polaris'in yürütme (Executor) lobusun. Sohbet geçmişinde zaten senin için hazırlanmış bir [PLAN] var. 
+Artık plan yapmana, strateji düşünmene veya uzun metinler yazmana gerek yok. 
+SADECE plandaki adımlara harfiyen uyarak araçları (tools) sırayla çalıştır ve görev tamamlandığında nihai sonucu derle.
+"""
 
         research_agent = create_react_agent(llm_with_fallbacks, research_tools, prompt=research_prompt)
         math_agent = create_react_agent(llm_with_fallbacks, math_tools, prompt=math_prompt)
         general_agent = create_react_agent(llm_with_fallbacks, general_tools, prompt=general_prompt)
         coder_agent = create_react_agent(llm_with_fallbacks, coder_tools, prompt=coder_prompt)
+        polaris_agent = create_react_agent(llm_with_fallbacks, polaris_tools, prompt=polaris_prompt)
 
         router_prompt = (
             "Asagidaki kullanici mesajini oku ve hangi uzman ajanin cevaplamasi gerektigine karar ver.\n"
-            "SADECE 'RESEARCHER', 'MATH', 'CODER' veya 'GENERAL' kelimelerinden birini dondur.\n"
+            "SADECE 'RESEARCHER', 'MATH', 'CODER', 'POLARIS' veya 'GENERAL' kelimelerinden birini dondur.\n"
             "Baska HICBIR sey yazma.\n\n"
-            "- Eger mesaj Python kodu yazmayi, grafik cizmeyi veya cok karmasik algoritmik bir problemi (kod ile) cozeyi gerektiriyorsa: CODER\n"
+            "- Eger mesaj birden fazla adımdan oluşan karmaşık bir islem, veya hem arama hem hesaplama/kodlama gibi çoklu zeka gerektiriyorsa: POLARIS\n"
+            "- Eger mesaj Python kodu yazmayi, grafik cizmeyi veya tek bir algoritmik problemi (kod ile) cozeyi gerektiriyorsa: CODER\n"
             "- Eger mesaj matematiksel bir hesaplama, denlem veya problem cozumu gerektiriyorsa: MATH\n"
             "- Eger mesaj guncel haber, hava durumu, wikipedia bilgisi veya internette arastirilmasi gereken bir konuysa: RESEARCHER\n"
             "- Diger her turlu sohbet, hal hatir sorma, kisiligi hakkinda bilgi verme, genel soru icin: GENERAL\n\n"
             f"Kullanici mesaji: {question}"
         )
-        route_content = primary_llm.invoke(router_prompt).content
+        route_content = llm_with_fallbacks.invoke(router_prompt).content
         if isinstance(route_content, list):
             route_content = " ".join([c.get("text", "") for c in route_content if isinstance(c, dict) and "text" in c])
         route_response = route_content.strip().upper()
         
-        if "CODER" in route_response:
+        if "POLARIS" in route_response:
+            agent_executor = polaris_agent
+            selected_agent_name = "Polaris (Baş Mimar)"
+        elif "CODER" in route_response:
             agent_executor = coder_agent
             selected_agent_name = "Yazılım Uzmanı"
         elif "MATH" in route_response:
@@ -572,6 +585,19 @@ def run_task():
                     db.session.commit()
 
             current_messages = list(messages_payload)
+            
+            if selected_agent_name == "Polaris (Baş Mimar)":
+                yield f"data: {json.dumps({'type': 'action', 'content': '🌟 Polaris: Görev analiz ediliyor ve stratejik plan oluşturuluyor...'})}\n\n"
+                planner_prompt = f"Sen Polaris'in planlama lobusun. Aşağıdaki görevi çözmek için adım adım numaralı bir plan çıkar. KESİNLİKLE ARAÇ (TOOL) KULLANMA. Sadece metin olarak planı yaz.\n\nGörev: {question}"
+                plan_content = llm_with_fallbacks.invoke(planner_prompt).content
+                if isinstance(plan_content, list):
+                    plan_content = " ".join([c.get("text", "") for c in plan_content if isinstance(c, dict) and "text" in c])
+                
+                yield f"data: {json.dumps({'type': 'thought', 'content': f'Answer:\n[PLAN]\n{plan_content}'})}\n\n"
+                
+                from langchain_core.messages import AIMessage
+                current_messages.append(AIMessage(content=f"İşte oluşturduğum stratejik plan:\n{plan_content}\n\nŞimdi bu plana sadık kalarak araçları sırayla kullanacağım."))
+
             revision_count = 0
             max_revisions = 1  # 1 ekstra revizyon
             
@@ -617,7 +643,7 @@ Uzman Cevabı: {worker_output}
 Eğer cevap tamamen doğru, güvenli, eksiksizse ve kullanıcının isteğini tam olarak karşılıyorsa SADECE "[KABUL]" yaz.
 Eğer eksik, kodda bariz bir hata, güvenlik açığı veya yetersiz açıklama varsa "[RED]" yaz ve hemen yanına nedenini ve eksikleri listele. (Örn: [RED] Kodda x değişkeni tanımsız, ayrıca yorum satırı eksik.)"""
                 
-                reviewer_response = primary_llm.invoke(reviewer_prompt).content
+                reviewer_response = llm_with_fallbacks.invoke(reviewer_prompt).content
                 
                 if "[KABUL]" in reviewer_response.upper() or revision_count >= max_revisions:
                     if revision_count >= max_revisions and "[KABUL]" not in reviewer_response.upper():
@@ -657,7 +683,7 @@ Eğer eksik, kodda bariz bir hata, güvenlik açığı veya yetersiz açıklama 
                     err_dict = ast.literal_eval(dict_str)
                     failed_gen = err_dict.get('error', {}).get('failed_generation')
                     if failed_gen:
-                        yield f"data: {json.dumps({'type': 'content', 'content': failed_gen})}\n\n"
+                        yield f"data: {json.dumps({'type': 'thought', 'content': failed_gen})}\n\n"
                         if user_id and current_session_id:
                              with app.app_context():
                                 agent_msg = ChatMessage(session_id=current_session_id, role="agent", content=failed_gen)
