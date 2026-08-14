@@ -58,10 +58,13 @@ body {
     width: 270px;
     min-width: 270px;
     background-color: var(--bg-sidebar);
-    border-right: 1px solid var(--border-color);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(147, 51, 234, 0.15);
     display: flex;
     flex-direction: column;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 2px 0 30px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-header {
@@ -91,27 +94,49 @@ body {
 
 .primary-btn {
     width: 100%;
-    background-color: var(--accent);
+    background: linear-gradient(135deg, var(--accent), #d8b4fe);
     color: white;
     border: none;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: background 0.2s;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 15px rgba(147, 51, 234, 0.3);
+    position: relative;
+    overflow: hidden;
 }
-.primary-btn:hover { background-color: var(--accent-hover); }
+.primary-btn::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+    transform: skewX(-20deg);
+    transition: left 0.5s;
+}
+.primary-btn:hover { 
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(147, 51, 234, 0.5);
+}
+.primary-btn:hover::after {
+    left: 200%;
+}
 .primary-btn.outline {
-    background-color: transparent;
-    border: 1px solid var(--border-color);
+    background: transparent;
+    border: 1px solid rgba(147, 51, 234, 0.3);
     color: var(--text-primary);
+    box-shadow: none;
 }
-.primary-btn.outline:hover { background-color: var(--bg-input); }
+.primary-btn.outline:hover { 
+    background-color: rgba(147, 51, 234, 0.1); 
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.1);
+}
 
 .settings-group { display: flex; flex-direction: column; gap: 8px; }
 .settings-group label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;}
@@ -401,17 +426,6 @@ textarea {
     display: flex;
     align-items: center;
 }
-#login-modal-btn {
-    font-size: 12px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    color: var(--text-primary);
-    background: var(--bg-input);
-    border: 1px solid var(--border-color);
-}
 
 /* MODAL */
 .modal-overlay {
@@ -432,19 +446,33 @@ textarea {
 }
 
 .modal-content {
-    background: var(--bg-input);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    width: 400px;
+    background: rgba(26, 26, 46, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(147, 51, 234, 0.3);
+    border-radius: 20px;
+    width: 450px;
     max-width: 90%;
-    padding: 24px;
+    max-height: 85vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px 32px;
     position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    transform: translateY(20px);
-    transition: transform 0.3s;
+    box-shadow: 0 0 40px rgba(147, 51, 234, 0.15), inset 0 0 20px rgba(147, 51, 234, 0.05);
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+/* Scrollbar formatting for modal-content */
+.modal-content::-webkit-scrollbar { width: 6px; }
+.modal-content::-webkit-scrollbar-track { background: transparent; }
+.modal-content::-webkit-scrollbar-thumb { background: rgba(147, 51, 234, 0.5); border-radius: 3px; }
+body.light-theme .modal-content {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(147, 51, 234, 0.2);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
 }
 .modal-overlay.show .modal-content {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
 }
 
 .modal-close {
@@ -467,7 +495,7 @@ textarea {
     margin-bottom: 24px;
     border-bottom: 1px solid var(--border-color);
 }
-.tab-btn {
+.tab-btn, .settings-tab-btn {
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -477,10 +505,10 @@ textarea {
     cursor: pointer;
     position: relative;
 }
-.tab-btn.active {
+.tab-btn.active, .settings-tab-btn.active {
     color: var(--text-primary);
 }
-.tab-btn.active::after {
+.tab-btn.active::after, .settings-tab-btn.active::after {
     content: "";
     position: absolute;
     bottom: -1px; left: 0; right: 0;
@@ -492,6 +520,7 @@ textarea {
     display: none;
     flex-direction: column;
     gap: 16px;
+    animation: fadeIn 0.4s ease;
 }
 .auth-form.active {
     display: flex;
@@ -500,24 +529,48 @@ textarea {
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    position: relative;
 }
 .form-group label {
     font-size: 13px;
-    font-weight: 500;
-    color: var(--text-secondary);
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 4px;
+}
+.form-group label i {
+    color: var(--accent);
+    font-size: 14px;
 }
 .form-group input {
-    background: var(--bg-main);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 14px 16px;
     color: var(--text-primary);
+    font-size: 15px;
     font-family: inherit;
     outline: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+body.light-theme .form-group input {
+    background: rgba(0, 0, 0, 0.03);
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
 }
 .form-group input:focus {
     border-color: var(--accent);
+    background: rgba(147, 51, 234, 0.08);
+    box-shadow: 0 0 0 4px rgba(147, 51, 234, 0.15), inset 0 2px 4px rgba(0,0,0,0.05);
+    transform: translateY(-2px);
+}
+.form-group input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.5;
 }
 
 
@@ -589,16 +642,26 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: transparent;
-    border: none;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     color: var(--text-primary);
-    padding: 10px;
-    border-radius: 8px;
+    padding: 12px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .sidebar-footer-btn:hover {
-    background: var(--bg-input);
+    background: rgba(147, 51, 234, 0.1);
+    border-color: rgba(147, 51, 234, 0.3);
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.1);
+}
+body.light-theme .sidebar-footer-btn {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+body.light-theme .sidebar-footer-btn:hover {
+    background: rgba(147, 51, 234, 0.05);
 }
 .btn-left {
     display: flex;
@@ -623,11 +686,19 @@ textarea {
 }
 .history-title {
     font-size: 11px;
+    font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-    padding-left: 8px;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    padding-left: 12px;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.history-title i {
+    color: var(--accent);
 }
 .chat-history-list {
     list-style: none;
@@ -636,21 +707,32 @@ textarea {
     gap: 4px;
 }
 .history-item {
-    padding: 10px 12px;
-    border-radius: 8px;
+    padding: 12px 14px;
+    border-radius: 12px;
     color: var(--text-primary);
-    font-size: 13px;
+    font-size: 13.5px;
+    font-weight: 500;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 10px;
-    transition: background 0.2s;
+    gap: 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .history-item:hover {
-    background: var(--bg-input);
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.05);
+    transform: translateX(4px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+body.light-theme .history-item:hover {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.05);
 }
 .history-item i {
-    color: var(--text-secondary);
+    color: var(--accent);
+    opacity: 0.9;
 }
 
 /* WELCOME SCREEN UPDATE */
@@ -1261,3 +1343,259 @@ tr:hover {
 }
 
 .message-content img { max-width: 100%; border-radius: 8px; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
+/* ========================================= */
+/* NAVI 2.0 MODERN MINIMALIST UPGRADE        */
+/* ========================================= */
+
+:root {
+    --bg-main: #0a0914; /* Deep purple-black */
+    --bg-sidebar: rgba(13, 11, 26, 0.75); /* Glass sidebar */
+    --bg-input: rgba(23, 20, 38, 0.75);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --accent: #a855f7; /* Vibrant modern purple */
+    --accent-hover: #c084fc;
+    --msg-user: rgba(30, 27, 50, 0.6);
+}
+
+body {
+    background: radial-gradient(circle at top right, #1a153a 0%, var(--bg-main) 40%);
+}
+
+.sidebar {
+    background-color: var(--bg-sidebar);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid var(--border-color);
+}
+
+.main-header {
+    background: transparent;
+    border-bottom: none;
+    padding-top: 15px;
+}
+
+/* Floating Input Box */
+.input-container {
+    padding: 0 50px 40px;
+    background: transparent;
+    border-top: none;
+}
+
+.input-box {
+    background: var(--bg-input);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(168, 85, 247, 0.1);
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+}
+
+.input-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(168, 85, 247, 0.3);
+    transform: translateY(-2px);
+}
+
+textarea#task-input {
+    font-size: 15px;
+    padding: 8px 0;
+}
+
+/* Micro-animations */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message {
+    animation: fadeInUp 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.user-message {
+    border-bottom-right-radius: 4px;
+    background: var(--msg-user);
+    backdrop-filter: blur(10px);
+}
+
+.agent-message {
+    border-bottom-left-radius: 4px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Agentic UI Logs */
+.agent-log {
+    background: rgba(168, 85, 247, 0.05);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 12px 12px 0;
+    padding: 12px 16px;
+    margin: 10px 0;
+    font-family: 'Space Grotesk', monospace;
+    font-size: 13px;
+    color: #cbd5e1;
+}
+
+.log-summary {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.action-btn, .icon-btn, .prompt-chip, .pill-btn, .primary-btn {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.prompt-chip {
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.prompt-chip:hover {
+    transform: translateY(-3px);
+    background: rgba(168, 85, 247, 0.2);
+    box-shadow: 0 6px 15px rgba(168, 85, 247, 0.15);
+}
+
+.welcome-screen h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 3rem;
+    background: linear-gradient(135deg, #fff 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+
+/* Override Log Boxes for Premium Look */
+.log-box {
+    background: rgba(168, 85, 247, 0.05) !important;
+    border: 1px solid rgba(168, 85, 247, 0.1) !important;
+    border-left: 3px solid var(--accent) !important;
+    border-radius: 4px 12px 12px 4px !important;
+    padding: 12px 16px !important;
+    margin: 10px 0 !important;
+    font-family: 'Space Grotesk', monospace !important;
+    font-size: 13px !important;
+    color: #cbd5e1 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.log-title {
+    color: var(--accent) !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    margin-bottom: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+
+/* ========================================= */
+/* NAVI 2.0 HOTFIXES (LIGHT THEME & INPUT)   */
+/* ========================================= */
+
+/* Fix input bar width */
+.input-container {
+    padding: 0 15% 40px !important;
+}
+
+@media (max-width: 768px) {
+    .input-container {
+        padding: 0 16px 20px !important;
+    }
+}
+
+/* Fix Light Theme overrides */
+body.light-theme {
+    background: #fdfcff !important;
+    color: #1e1b4b !important;
+}
+
+body.light-theme .user-message {
+    background: #f3e8ff !important;
+    color: #1e1b4b !important;
+    border: 1px solid #e9d5ff !important;
+}
+
+body.light-theme .agent-message {
+    background: #ffffff !important;
+    color: #1e1b4b !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
+}
+
+body.light-theme .welcome-screen h1 {
+    background: linear-gradient(135deg, #4c1d95 0%, #a855f7 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
+
+body.light-theme .input-box {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-color: rgba(168, 85, 247, 0.2) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme .agent-log {
+    background: rgba(168, 85, 247, 0.05) !important;
+    color: #475569 !important;
+}
+
+/* Ensure body dark theme uses the new gradient */
+body.dark-theme {
+    background: radial-gradient(circle at top right, #1a153a 0%, var(--bg-main) 40%) !important;
+    color: #f8f7ff !important;
+}
+
+
+/* Fix log boxes text color in light theme */
+body.light-theme .log-box {
+    background: rgba(168, 85, 247, 0.08) !important;
+    color: #334155 !important;
+    border: 1px solid rgba(168, 85, 247, 0.2) !important;
+    border-left: 3px solid var(--accent) !important;
+}
+
+body.light-theme .log-title {
+    color: #7e22ce !important; /* Darker purple for title */
+    font-weight: 700 !important;
+}
+
+
+/* HEADER AUTH BUTTONS */
+.auth-header-actions {
+    display: flex; 
+    gap: 10px; 
+    align-items: center;
+}
+.header-auth-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+.header-auth-btn.login-btn,
+.header-auth-btn.register-btn {
+    background: rgba(147, 51, 234, 0.1);
+    color: var(--text-primary);
+    border: 1px solid rgba(147, 51, 234, 0.3);
+    box-shadow: none;
+}
+.header-auth-btn.register-btn {
+    background: rgba(147, 51, 234, 0.25);
+    border-color: rgba(147, 51, 234, 0.5);
+}
+.header-auth-btn.login-btn:hover,
+.header-auth-btn.register-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(147, 51, 234, 0.35);
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.2);
+}

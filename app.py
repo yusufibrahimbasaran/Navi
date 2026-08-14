@@ -13,6 +13,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_community.tools import WikipediaQueryRun, DuckDuckGoSearchRun
 from langchain_community.utilities import WikipediaAPIWrapper
 from langchain_core.tools import tool
+from langchain_core.documents import Document
 from langgraph.prebuilt import create_react_agent
 from langchain_core.globals import set_llm_cache
 from langchain_community.cache import SQLiteCache
@@ -25,14 +26,25 @@ app.secret_key = "super_secret_navi_key_2026"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///navi.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+UPLOAD_FOLDER = os.path.join(app.root_path, "uploads")
+FAISS_FOLDER = os.path.join(app.root_path, "faiss_db")
+USER_MEMORY_FAISS_FOLDER = os.path.join(app.root_path, "user_memory_faiss")
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(FAISS_FOLDER, exist_ok=True)
+os.makedirs(USER_MEMORY_FAISS_FOLDER, exist_ok=True)
+
 db = SQLAlchemy(app)
 
 # ================= VERITABANI MODELLERI =================
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fullname = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    job_title = db.Column(db.String(100), nullable=True)
+    interests = db.Column(db.String(300), nullable=True)
     sessions = db.relationship('ChatSession', backref='user', lazy=True)
 
 class ChatSession(db.Model):
@@ -59,7 +71,7 @@ class ChatMessage(db.Model):
 with app.app_context():
     db.create_all()
 
-# ================= ARACLAR =================
+# ================= ARAÇCLAR =================
 wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper(lang="tr"))
 _ddg = DuckDuckGoSearchRun()
 
@@ -139,7 +151,7 @@ def read_webpage(url: str) -> str:
 def execute_python_code(code: str) -> str:
     """
     Python kodu calistirir ve konsol ciktisini (stdout) dondurur.
-    Gorevleri cozmek veya veri analizi yapmak icin bu araci kullanin.
+    Gorevleri coçözmek veya veri analizi yapmak icin bu araci kullanin.
     Kritik kural: Kodun sonucunu gormek icin mutlaka print() kullanmalisiniz!
     Sistem dosyalarini silmeyin veya zarar vermeyin.
     """
@@ -173,7 +185,7 @@ system_prompt = (
     "- Onemli kelimeleri veya sonuclari **kalin (bold)** yaz.\n"
     "- Adim adim veya liste halinde bilgi verirken madde isaretleri (bullet points) kullan.\n"
     "- Kaynak belirtecegin zaman okudugun web sitelerinin URL'lerini link olarak ver.\n"
-    "- Veri, tablo veya karsilastirma varsa mutlaka Markdown tablosu olustur.\n"
+    "- Veri, tablo veya çıkarsilastirma varsa mutlaka Markdown tablosu olustur.\n"
     "- Uzun cevaplari mantiksal bolumlere ayirmak icin Markdown basliklari (#, ##) kullan.\n"
     "- Cevabin her zaman profesyonel bir rapor gibi estetik olmalidir."
 )
@@ -228,7 +240,7 @@ def upload_file():
         return jsonify({"error": f"Dosya okuma hatas?: {str(e)}"}), 500
 
     if not text.strip():
-        return jsonify({"error": "Belge bo? veya metin ??kar?lamad?."}), 400
+        return jsonify({"error": "Belge bo? veya metin ??çıkar?lamad?."}), 400
         
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     docs = text_splitter.create_documents([text])
@@ -255,16 +267,58 @@ def upload_file():
 def register():
     data = request.json
     fullname = data.get("fullname")
+    username = data.get("username")
     email = data.get("email")
     password = data.get("password")
+    job_title = data.get("job_title", "")
+    interests = data.get("interests", "")
     
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Bu e-posta adresi zaten kullaniliyor."}), 400
+    if User.query.filter_by(email=email).first() or User.query.filter_by(username=username).first():
+        return jsonify({"error": "Bu e-posta adresi veya kullanici adi zaten kullaniliyor."}), 400
         
     hashed_pw = generate_password_hash(password)
-    new_user = User(fullname=fullname, email=email, password_hash=hashed_pw)
+    new_user = User(
+        fullname=fullname, 
+        username=username, 
+        email=email, 
+        password_hash=hashed_pw,
+        job_title=job_title,
+        interests=interests
+    )
     db.session.add(new_user)
     db.session.commit()
+    
+    # Initialize FAISS memory if job_title or interests are provided
+    if job_title or interests:
+        try:
+            from langchain_core.documents import Document
+            from langchain_community.vectorstores import FAISS
+            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+            import os
+            
+            embeddings_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+            facts = []
+            if job_title:
+                facts.append(f"Kullanicinin meslegi/unvani: {job_title}")
+            if interests:
+                facts.append(f"Kullanicinin ilgi alanlari: {interests}")
+                
+            docs = [Document(page_content=fact, metadata={"source": "user_memory"}) for fact in facts]
+            
+            user_index_path = os.path.join(USER_MEMORY_FAISS_FOLDER, str(new_user.id))
+            if os.path.exists(user_index_path):
+                user_vectorstore = FAISS.load_local(user_index_path, embeddings_model, allow_dangerous_deserialization=True)
+                user_vectorstore.add_documents(docs)
+            else:
+                user_vectorstore = FAISS.from_documents(docs, embeddings_model)
+            user_vectorstore.save_local(user_index_path)
+            
+            for fact in facts:
+                new_memory = UserMemory(user_id=new_user.id, memory_text=fact)
+                db.session.add(new_memory)
+            db.session.commit()
+        except Exception as e:
+            print("Register FAISS Error:", e)
     
     return jsonify({"success": True, "message": "Kayit basarili! Lutfen giris yapin."})
 
@@ -508,7 +562,7 @@ def run_task():
         general_tools = [t for t in request_tools if t.name in ["save_user_memory"]]
         coder_tools = [t for t in request_tools if t.name in ["execute_python_code", "internet_search"]]
         
-        research_prompt = dynamic_prompt + "\n[GOREV: ARASTIRMACI]\nSadece arastirma ve okuma yap."
+        research_prompt = dynamic_prompt + "\n[GOREV: ARAÇSTIRMACI]\nSadece arastirma ve okuma yap."
         math_prompt = dynamic_prompt + "\n[GOREV: MATEMATIKCI]\nSadece matematik problemleri coz."
         general_prompt = dynamic_prompt + "\n[GOREV: GENEL ASISTAN]\nSohbet et ve gerekirse hafiza kaydet."
         coder_prompt = dynamic_prompt + "\n[GOREV: YAZILIMCI]\nSen bir Python uzmanisin. Istenen isleri yapmak veya veri analizi/hesaplama gerceklestirmek icin Python kodu yaz ve 'execute_python_code' araciyla calistirarak sonucunu ogren. Cikti almak icin print() kullanmayi unutma."
@@ -517,8 +571,8 @@ def run_task():
         polaris_prompt = dynamic_prompt + """
 [GOREV: POLARIS (BAŞ MİMAR)]
 Sen Polaris'in yürütme (Executor) lobusun. Sohbet geçmişinde zaten senin için hazırlanmış bir [PLAN] var. 
-Artık plan yapmana, strateji düşünmene veya uzun metinler yazmana gerek yok. 
-SADECE plandaki adımlara harfiyen uyarak araçları (tools) sırayla çalıştır ve görev tamamlandığında nihai sonucu derle.
+Artık planı yapmana, strateji düşünmene veya uzun metinler yazmana gerek yok. 
+SADECE planıdaki adımlara harfiyen uyarak araçları (tools) sırayla çalıştır ve görev tamamlandığında nihai sonucu derle.
 """
 
         research_agent = create_react_agent(llm_with_fallbacks, research_tools, prompt=research_prompt)
@@ -528,10 +582,10 @@ SADECE plandaki adımlara harfiyen uyarak araçları (tools) sırayla çalışt�
         polaris_agent = create_react_agent(llm_with_fallbacks, polaris_tools, prompt=polaris_prompt)
 
         router_prompt = (
-            "Asagidaki kullanici mesajini oku ve hangi uzman ajanin cevaplamasi gerektigine karar ver.\n"
+            "Asagidaki kullanici mesajini oku ve hangi uzman ajanin cevaplamasi gerektigine çıkarar ver.\n"
             "SADECE 'RESEARCHER', 'MATH', 'CODER', 'POLARIS' veya 'GENERAL' kelimelerinden birini dondur.\n"
             "Baska HICBIR sey yazma.\n\n"
-            "- Eger mesaj birden fazla adımdan oluşan karmaşık bir islem, veya hem arama hem hesaplama/kodlama gibi çoklu zeka gerektiriyorsa: POLARIS\n"
+            "- Eger mesaj birden fazla adımdan oluşan çıkarmaşık bir islem, veya hem arama hem hesaplama/kodlama gibi çoklu zeka gerektiriyorsa: POLARIS\n"
             "- Eger mesaj Python kodu yazmayi, grafik cizmeyi veya tek bir algoritmik problemi (kod ile) cozeyi gerektiriyorsa: CODER\n"
             "- Eger mesaj matematiksel bir hesaplama, denlem veya problem cozumu gerektiriyorsa: MATH\n"
             "- Eger mesaj guncel haber, hava durumu, wikipedia bilgisi veya internette arastirilmasi gereken bir konuysa: RESEARCHER\n"
@@ -567,7 +621,7 @@ SADECE plandaki adımlara harfiyen uyarak araçları (tools) sırayla çalışt�
         current_session_id = chat_session_id
         
         try:
-            yield f"data: {json.dumps({'type': 'action', 'content': f'Yönetici Navi: Görev **{selected_agent_name}** departmanına atandı.'})}\n\n"
+            yield f"data: {json.dumps({'type': 'action', 'content': f'Yönetici Navi: Görev **{selected_agent_name}** departmanına atandıı.'})}\n\n"
             
             # Kullanici girisi varsa ve session yoksa yeni session olustur
             if user_id:
@@ -587,16 +641,16 @@ SADECE plandaki adımlara harfiyen uyarak araçları (tools) sırayla çalışt�
             current_messages = list(messages_payload)
             
             if selected_agent_name == "Polaris (Baş Mimar)":
-                yield f"data: {json.dumps({'type': 'action', 'content': '🌟 Polaris: Görev analiz ediliyor ve stratejik plan oluşturuluyor...'})}\n\n"
-                planner_prompt = f"Sen Polaris'in planlama lobusun. Aşağıdaki görevi çözmek için adım adım numaralı bir plan çıkar. KESİNLİKLE ARAÇ (TOOL) KULLANMA. Sadece metin olarak planı yaz.\n\nGörev: {question}"
-                plan_content = llm_with_fallbacks.invoke(planner_prompt).content
-                if isinstance(plan_content, list):
-                    plan_content = " ".join([c.get("text", "") for c in plan_content if isinstance(c, dict) and "text" in c])
+                yield f"data: {json.dumps({'type': 'action', 'content': '🌟 Polaris: Görev analiz ediliyor ve stratejik planı oluşturuluyor...'})}\n\n"
+                planıner_prompt = f"Sen Polaris'in planılama lobusun. Aşağıdaki görevi çöçözmek için adım adım numaralıı bir planı çıçıkar. KESİNLİKLE ARAÇÇ (TOOL) KULLANMA. Sadece metin olarak planıı yaz.\n\nGörev: {question}"
+                planı_content = llm_with_fallbacks.invoke(planıner_prompt).content
+                if isinstance(planı_content, list):
+                    planı_content = " ".join([c.get("text", "") for c in planı_content if isinstance(c, dict) and "text" in c])
                 
-                yield f"data: {json.dumps({'type': 'thought', 'content': f'Answer:\n[PLAN]\n{plan_content}'})}\n\n"
+                yield f"data: {json.dumps({'type': 'thought', 'content': f'Answer:\n[PLAN]\n{planı_content}'})}\n\n"
                 
                 from langchain_core.messages import AIMessage
-                current_messages.append(AIMessage(content=f"İşte oluşturduğum stratejik plan:\n{plan_content}\n\nŞimdi bu plana sadık kalarak araçları sırayla kullanacağım."))
+                current_messages.append(AIMessage(content=f"İşte oluşturduğum stratejik planı:\n{planı_content}\n\nŞimdi bu planıa sadık kalarak araçları sırayla kullanacağım."))
 
             revision_count = 0
             max_revisions = 1  # 1 ekstra revizyon
@@ -640,7 +694,7 @@ Aşağıdaki kullanıcı görevini ve uzman ajanın verdiği yanıtı incele.
 Görev: {question}
 Uzman Cevabı: {worker_output}
 
-Eğer cevap tamamen doğru, güvenli, eksiksizse ve kullanıcının isteğini tam olarak karşılıyorsa SADECE "[KABUL]" yaz.
+Eğer cevap tamamen doğru, güvenli, eksiksizse ve kullanıcının isteğini tam olarak çıkarşılıyorsa SADECE "[KABUL]" yaz.
 Eğer eksik, kodda bariz bir hata, güvenlik açığı veya yetersiz açıklama varsa "[RED]" yaz ve hemen yanına nedenini ve eksikleri listele. (Örn: [RED] Kodda x değişkeni tanımsız, ayrıca yorum satırı eksik.)"""
                 
                 reviewer_response = llm_with_fallbacks.invoke(reviewer_prompt).content

@@ -301,7 +301,14 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
     const authForms = document.querySelectorAll(".auth-form");
 
     if (loginModalBtn && authModal) {
-        loginModalBtn.addEventListener("click", () => authModal.classList.add("show"));
+        loginModalBtn.addEventListener("click", () => { authModal.classList.add("show"); tabBtns[0].click(); });
+        const registerHeaderBtn = document.getElementById("register-header-btn");
+        if (registerHeaderBtn) {
+            registerHeaderBtn.addEventListener("click", () => {
+                authModal.classList.add("show");
+                tabBtns[1].click(); // Kayıt ol sekmesine geç
+            });
+        }
         modalCloseBtn.addEventListener("click", () => authModal.classList.remove("show"));
         authModal.addEventListener("click", (e) => {
             if (e.target === authModal) authModal.classList.remove("show");
@@ -321,15 +328,18 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
     const registerForm = document.getElementById("register-form");
     
     if (registerForm) {
-        const btn = registerForm.querySelector("button");
+        const btn = document.getElementById("do-register-btn") || registerForm.querySelector("button");
         btn.onclick = async () => {
-            const fullname = registerForm.querySelector("input[type='text']").value;
-            const email = registerForm.querySelector("input[type='email']").value;
-            const password = registerForm.querySelector("input[type='password']").value;
+            const fullname = document.getElementById("reg-fullname").value;
+            const username = document.getElementById("reg-username").value;
+            const email = document.getElementById("reg-email").value;
+            const job_title = document.getElementById("reg-jobtitle").value;
+            const interests = document.getElementById("reg-interests").value;
+            const password = document.getElementById("reg-password").value;
             
             const res = await fetch("/api/register", {
                 method: "POST", headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({fullname, email, password})
+                body: JSON.stringify({fullname, username, email, job_title, interests, password})
             });
             const data = await res.json();
             alert(data.message || data.error);
@@ -340,10 +350,10 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
     }
 
     if (loginForm) {
-        const btn = loginForm.querySelector("button");
+        const btn = document.getElementById("do-login-btn") || loginForm.querySelector("button");
         btn.onclick = async () => {
-            const email = loginForm.querySelector("input[type='email']").value;
-            const password = loginForm.querySelector("input[type='password']").value;
+            const email = document.getElementById("login-email") ? document.getElementById("login-email").value : loginForm.querySelector("input[type='email']").value;
+            const password = document.getElementById("login-password") ? document.getElementById("login-password").value : loginForm.querySelector("input[type='password']").value;
             
             const res = await fetch("/api/login", {
                 method: "POST", headers: {"Content-Type":"application/json"},
@@ -533,7 +543,17 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
     const settingsCloseBtn = document.getElementById("settings-close-btn");
 
     if (settingsModalBtn && settingsModal) {
-        settingsModalBtn.addEventListener("click", () => settingsModal.classList.add("show"));
+        settingsModalBtn.addEventListener("click", () => { 
+    settingsModal.classList.add("show"); 
+    const clearBtn = document.getElementById("clear-memory-btn");
+    const memList = document.getElementById("memory-list");
+    if (!currentSessionId) {
+        if (clearBtn) clearBtn.style.display = "none";
+        if (memList) memList.innerHTML = "<li style='text-align:center; color:gray; padding:20px;'><i class='fa-solid fa-lock' style='font-size: 24px; margin-bottom:10px; display:block;'></i>Hafıza özelliklerini görebilmek için giriş yapmalısınız.</li>";
+    } else {
+        fetchMemories(); 
+    }
+});
         settingsCloseBtn.addEventListener("click", () => settingsModal.classList.remove("show"));
         settingsModal.addEventListener("click", (e) => {
             if (e.target === settingsModal) settingsModal.classList.remove("show");
@@ -647,7 +667,8 @@ window.copyToClipboard = function(btn) {
 };
 
 // --- Memory Functions ---
-async function openMemoryModal() {
+async function openMemoryModal() { // deprecated
+
     const modal = document.getElementById("memory-modal");
     if(modal) modal.classList.add("show");
     await fetchMemories();
