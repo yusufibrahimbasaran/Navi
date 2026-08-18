@@ -199,6 +199,11 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
                 })
             });
 
+            // We can now clear the image since we have already sent the request
+            selectedImageBase64 = null;
+            if (document.getElementById('image-preview-container')) document.getElementById('image-preview-container').style.display = 'none';
+            if (document.getElementById('image-upload')) document.getElementById('image-upload').value = '';
+
             if (!response.ok) {
                 const errorData = await response.json();
                 const errorMsg = errorData.error || 'Bilinmeyen bir sunucu hatası oluştu.';
@@ -559,95 +564,126 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
             if (e.target === settingsModal) settingsModal.classList.remove("show");
         });
     }
-// --- RAG Document Upload Logic ---
-let selectedImageBase64 = null; // Keep this variable as it's used in the payload
-const attachBtn = document.getElementById("attach-btn");
-const documentUpload = document.getElementById("document-upload");
-const filePillContainer = document.getElementById("file-pill-container");
-const filePillName = document.getElementById("file-pill-name");
-const removeFileBtn = document.getElementById("remove-file-btn");
+// --- ATTACH DROPDOWN & UPLOAD LOGIC ---
+  let selectedImageBase64 = null;
+  const attachBtn = document.getElementById("attach-btn");
+  const attachDropdown = document.getElementById("attach-dropdown");
+  const menuImageUpload = document.getElementById("menu-image-upload");
+  const menuDocUpload = document.getElementById("menu-doc-upload");
+  
+  const imageUpload = document.getElementById("image-upload");
+  const documentUpload = document.getElementById("document-upload");
+  
+  const filePillContainer = document.getElementById("file-pill-container");
+  const filePillName = document.getElementById("file-pill-name");
+  const removeFileBtn = document.getElementById("remove-file-btn");
+  
+  const imagePreviewContainer = document.getElementById("image-preview-container");
+  const imagePreview = document.getElementById("image-preview");
+  const removeImageBtn = document.getElementById("remove-image-btn");
 
-if (attachBtn && documentUpload) {
-    attachBtn.addEventListener("click", () => {
-        documentUpload.click();
-    });
+  if (attachBtn && attachDropdown) {
+      attachBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          attachDropdown.classList.toggle("show");
+      });
+      
+      document.addEventListener("click", (e) => {
+          if (!attachBtn.contains(e.target) && !attachDropdown.contains(e.target)) {
+              attachDropdown.classList.remove("show");
+          }
+      });
+  }
 
-    documentUpload.addEventListener("change", async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+  if (menuImageUpload && imageUpload) {
+      menuImageUpload.addEventListener("click", () => {
+          attachDropdown.classList.remove("show");
+          imageUpload.click();
+      });
+      
+      imageUpload.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = function(event) {
+              selectedImageBase64 = event.target.result;
+              if (imagePreviewContainer && imagePreview) {
+                  imagePreview.src = selectedImageBase64;
+                  imagePreviewContainer.style.display = "block";
+              }
+              // Hide document pill if it was showing
+              if (filePillContainer) filePillContainer.style.display = "none";
+          };
+          reader.readAsDataURL(file);
+      });
+  }
 
-        // Eger resimse (multimodal), onceki vision mantigini islet
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                selectedImageBase64 = event.target.result;
-                if (filePillContainer && filePillName) {
-                    filePillName.textContent = file.name;
-                    filePillContainer.style.display = "flex";
-                }
-            };
-            reader.readAsDataURL(file);
-            return;
-        }
+  if (menuDocUpload && documentUpload) {
+      menuDocUpload.addEventListener("click", () => {
+          attachDropdown.classList.remove("show");
+          documentUpload.click();
+      });
+      
+      documentUpload.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
 
-        // Dosya eklendi efekti
-        const originalIcon = attachBtn.innerHTML;
-        attachBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        attachBtn.disabled = true;
+          // Clear image if it was showing
+          selectedImageBase64 = null;
+          if (imagePreviewContainer) imagePreviewContainer.style.display = "none";
+          
+          const originalIcon = attachBtn.innerHTML;
+          attachBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          attachBtn.disabled = true;
+  
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("session_id", currentSessionId || "");
+  
+          try {
+              const response = await fetch("/api/upload", {
+                  method: "POST",
+                  body: formData
+              });
+  
+              const data = await response.json();
+  
+              if (response.ok) {
+                  if (filePillContainer && filePillName) {
+                      filePillName.textContent = file.name;
+                      filePillContainer.style.display = "flex";
+                  }
+              } else {
+                  alert("Dosya yükleme hatası: " + (data.error || "Bilinmeyen hata"));
+              }
+          } catch (err) {
+              console.error(err);
+              alert("Dosya yüklenirken bir hata oluştu.");
+          } finally {
+              attachBtn.innerHTML = originalIcon;
+              attachBtn.disabled = false;
+              documentUpload.value = "";
+          }
+      });
+  }
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("session_id", currentSessionId || "");
+  if (removeFileBtn) {
+      removeFileBtn.addEventListener("click", () => {
+          if (filePillContainer) filePillContainer.style.display = "none";
+          if (documentUpload) documentUpload.value = "";
+      });
+  }
+  
+  if (removeImageBtn) {
+      removeImageBtn.addEventListener("click", () => {
+          selectedImageBase64 = null;
+          if (imagePreviewContainer) imagePreviewContainer.style.display = "none";
+          if (imageUpload) imageUpload.value = "";
+      });
+  }
 
-        try {
-            const response = await fetch("/api/upload", {
-                method: "POST",
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                if (data.session_id && !currentSessionId) {
-                    currentSessionId = data.session_id;
-                    loadChatHistory();
-                }
-
-                if (filePillContainer && filePillName) {
-                    filePillName.textContent = file.name;
-                    filePillContainer.style.display = "flex";
-                }
-                
-                const msgDiv = createMessageWrapper('agent');
-                msgDiv.innerHTML = `<span style="color: var(--accent);">📎 ${file.name} başarıyla sisteme yüklendi ve analiz edildi. Artık bu belge hakkında sorular sorabilirsiniz.</span>`;
-                scrollToBottom();
-            } else {
-                const errDiv = createMessageWrapper('agent');
-                errDiv.innerHTML = `<span style="color: red;">❌ Dosya yüklenirken hata oluştu: ${data.error || ""}</span>`;
-                scrollToBottom();
-            }
-        } catch (error) {
-            const errDiv = createMessageWrapper('agent');
-            errDiv.innerHTML = `<span style="color: red;">❌ Sunucu bağlantı hatası.</span>`;
-            scrollToBottom();
-            console.error(error);
-        } finally {
-            attachBtn.innerHTML = originalIcon;
-            attachBtn.disabled = false;
-        }
-    });
-
-    if (removeFileBtn) {
-        removeFileBtn.addEventListener("click", () => {
-            selectedImageBase64 = null;
-            if (filePillContainer) filePillContainer.style.display = "none";
-            if (documentUpload) documentUpload.value = "";
-        });
-    }
-}
-
-
-});
+  });
 
 // --- GLOBAL COPY FUNCTION ---
 window.copyToClipboard = function(btn) {
@@ -914,3 +950,69 @@ function _doSpeak(text, onEndCallback) {
         });
     }
 }
+
+
+// --- SPEECH TO TEXT LOGIC (Microphone) ---
+document.addEventListener("DOMContentLoaded", () => {
+    const voiceBtn = document.getElementById("voice-btn");
+    const taskInput = document.getElementById("task-input");
+    
+    if (voiceBtn) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            
+            let isRecording = false;
+            
+            voiceBtn.addEventListener("click", () => {
+                if (isRecording) {
+                    recognition.stop();
+                    return;
+                }
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error("Speech recognition error:", e);
+                }
+            });
+            
+            recognition.onstart = () => {
+                isRecording = true;
+                voiceBtn.classList.add('recording-pulse');
+            };
+            
+            recognition.onresult = (event) => {
+                const speechResult = event.results[0][0].transcript;
+                if(taskInput.value) {
+                    taskInput.value += ' ' + speechResult;
+                } else {
+                    taskInput.value = speechResult;
+                }
+                taskInput.dispatchEvent(new Event('input')); // trigger auto-resize
+            };
+            
+            recognition.onspeechend = () => {
+                recognition.stop();
+            };
+            
+            recognition.onend = () => {
+                isRecording = false;
+                voiceBtn.classList.remove('recording-pulse');
+            };
+            
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                isRecording = false;
+                voiceBtn.classList.remove('recording-pulse');
+            };
+        } else {
+            voiceBtn.addEventListener("click", () => {
+                alert("Tarayıcınız ses tanıma özelliğini desteklemiyor. Lütfen Chrome, Edge veya Safari kullanın.");
+            });
+        }
+    }
+});

@@ -1,39 +1,35 @@
-# Navi 2.0 - Otonom Yapay Zeka Asistanı 🚀
+# Navi 3.0 - Otonom Yapay Zeka Ajan Mimarisi
 
-Navi, sıradan bir sor-cevap (ChatGPT benzeri) chatbot olmaktan öteye geçmek için tasarlanmış **Agentic (Otonom Ajan)** mimarisine sahip birinci sınıf bir web asistanıdır. LangChain ve LangGraph teknolojileri kullanılarak inşa edilmiştir.
+Navi, sıradan bir sor-cevap chatbotu olmaktan çok öteye geçen, LangChain ve LangGraph teknolojileri kullanılarak inşa edilmiş **Agentic (Otonom Ajan)** mimarisine sahip gelişmiş bir web asistanıdır.
 
-## 🌟 Yeni Sürüm (Navi 2.0) Öne Çıkan Özellikleri
+## 🔥 Yeni Sürüm (Navi 3.0) Öne Çıkan Özellikleri
 
-Navi 2.0, sistemi yepyeni bir zeka ve arayüz boyutuyla tanıştırıyor!
+Navi 3.0 ile "Otonom Yapay Zeka" vizyonumuzu tamamladık ve ajanların kendi aralarında tartıştığı, plan yaptığı, kod yazıp güvenliğini test ettiği mükemmel bir ekosistem kurduk!
 
-*   **🧠 Derin Hafıza (Vector DB - FAISS):** Navi artık sizinle yaptığı sohbetleri sadece hatırlamakla kalmıyor, onları derinlemesine analiz edip FAISS (vektör veritabanı) ile anlamlandırıyor. Mesleğinizi, ilgi alanlarınızı ve geçmişte verdiğiniz kritik detayları öğrenerek size **tamamen kişiselleştirilmiş** cevaplar sunuyor. 
-*   **💻 Yerel Dosya Okuma ve Kodlama Yeteneği (Auto-Debug):** Navi artık yerel dosyalarınızı (RAG) okuyabilir, analiz edebilir ve gerektiğinde Python kodları yazıp sisteminizde çalıştırarak **otomatik hata ayıklama (auto-debug)** yapabilir.
-*   **🎯 Planlama Zekası:** Büyük ve karmaşık projeleri adım adım bölen, stratejik planlar yapan ve "Denetmen Ajan" ile kodları/yazıları mükemmelleştiren eşsiz bir planlama zekası.
-*   **🎨 Kusursuz Siber-Modern Arayüz (UI Yenilikleri):** 
-    *   *Glassmorphism* (yarı saydam cam) stiliyle tasarlanmış, akıcı animasyonlara sahip muazzam giriş ve kayıt ekranları.
-    *   Tamamen yeniden tasarlanmış sol menü (Sidebar) ve geçmiş sohbetler alanı.
-    *   Sistem güvenliğini ve hafızanızı tek noktadan yönetmenizi sağlayan şık, sekmeli **Ayarlar** penceresi.
-    *   Giriş yapılmadığında hassas özellikleri (Hafıza silme vb.) anında gizleyen senkron güvenlik altyapısı.
-*   **🇹🇷 Tam UTF-8 ve Türkçe Karakter Desteği:** Sistem genelinde kodlama yapısı yenilenerek tüm Türkçe karakter ve metin sorunları tamamen çözüldü.
+*   **🎙️ Ajanlar Arası Münazara (Multi-Agent Debate):** Karmaşık veya felsefi konularda tek bir ajanın cevabıyla yetinmiyoruz. **Sirius** (Araştırmacı) konuyu savunur, **Orion** (Yazılımcı) itiraz edip zayıf yönlerini bulur ve **Polaris** (Baş Mimar) bu fikirleri sentezleyerek size en mükemmel kararı sunar.
+*   **📁 İzole Çalışma Alanları (Workspace Sistemi):** Navi artık sizin için sadece kod yazmakla kalmıyor, o kodları çalıştırabileceği, test edebileceği ve rapor/dosya üretebileceği oturuma özel **izole klasörlerde (workspaces)** çalışıyor. Ajanlar bu klasörde dosya okur, yazar ve test eder.
+*   **🛡️ Güvenlik Kalkanı (Aegis Agent):** Otonom ajanların makinenizde kod çalıştırması risklidir. Navi 3.0'ın yerleşik güvenlik ajanı Aegis, tehlikeli komutları ve sistem dosyalarına müdahaleyi anında bloke eder.
+*   **🧠 Dinamik Vektör Hafızası (FAISS Memory Scoring):** Yalnızca eski mesajları değil, sizinle ilgili "kalıcı gerçekleri" FAISS vektör veritabanına kaydeder, alaka düzeyini (relevance) puanlar ve tam gerektiği anda hatırlar.
+*   **⚙️ Otomatik Hata Ayıklama (Auto-Correction):** Yazılımcı ajanımız Orion, kod yazdıktan sonra hata alırsa size bunu yansıtmaz. Kendi hatasını okur, düzeltir ve kod başarıyla çalışana kadar otonom olarak (maks. 3 kez) kendini iyileştirir.
+*   **⚡ Dinamik Model Fallback Ağı:** Groq (Llama 3), Gemini, OpenAI (GPT-4) veya Anthropic. Sistem bir modele ulaşamadığında veya model yayından kalktığında dinamik olarak çalışan API modellerini bulup çökmeden otonom geçiş yapar.
 
 ---
 
-## ⚙️ Core Özellikler (Navi 1.0'dan Miras)
+## 🌟 Yıldız Ajan Kadromuz
 
-*   **Çoklu Ajan (Multi-Agent) Mimarisi:** Navi tek bir beyin değildir; bir **ekiptir**. Yönlendirici (Router) ajan görevi Yazılımcı, Araştırmacı veya Matematikçi ajanlara dağıtır.
-*   **Denetmen (Reviewer):** Çıkan sonuç kullanıcıya iletilmeden önce katı bir Denetmen Ajan tarafından incelenir. Hata varsa (örn: eksik kod, güvenlik açığı), reddeder ve uzman ajana düzeltmesi için geri gönderir. 
-*   **Dinamik Araç Kullanımı (Tool Calling):** 
-    *   İnternette güncel arama yapabilir ve web sayfalarının içeriğini okuyabilir.
-    *   Matematiksel işlemleri hatasız hesaplayabilir.
-    *   Hava durumunu anlık çekebilir.
-*   **Çoklu Model Desteği (Model Agnostic):** Google Gemini, Groq (Llama 3), OpenAI (GPT-4) ve Anthropic (Claude) API anahtarlarını destekler. Çökme (Fallback) durumunda otomatik geçiş yapar.
-*   **Canlı Veri Akışı (SSE Streaming):** Ajanların düşünme süreçleri, araç (tool) kullanımları ve aralarındaki tartışmalar saniye saniye canlı olarak yansıtılır.
+*   **Navi (Yönlendirici):** Tüm isteklerinizi analiz edip doğru departmana ileten yönetici ajan.
+*   **Polaris (Baş Mimar):** Karmaşık görevleri alt görevlere (DAG) bölen ve büyük resmi gören lider.
+*   **Sirius (Araştırmacı):** İnternette derinlemesine araştırmalar yapan ve kaynak toplayan ajan.
+*   **Orion (Yazılım Uzmanı):** Python kodları yazan, çalıştıran ve hataları kendi kendine düzelten mühendis.
+*   **Vega (Matematik Uzmanı):** Sayısal hesaplamaları sıfır hatayla yapan analitik ajan.
+*   **Lyra (Metin Yazarı):** Blog, e-posta veya makale üreten yaratıcı zeka.
+*   **Rigel (Veri Analisti):** Görsel veya veri dosyası yüklendiğinde bunları analiz eden uzman (Yakında tam sürüm!).
 
 ## 🚀 Kurulum ve Çalıştırma
 
 ### Gereksinimler
 *   Python 3.9 veya üstü
-*   Gerekli API Anahtarları (Gemini, Groq vb.)
+*   Gerekli API Anahtarları (Gemini, Groq vb. - en az biri yeterlidir)
 
 ### Adımlar
 1.  Projeyi klonlayın ve dizine gidin:
@@ -45,7 +41,6 @@ Navi 2.0, sistemi yepyeni bir zeka ve arayüz boyutuyla tanıştırıyor!
     ```bash
     pip install -r requirements.txt
     ```
-    *(Not: `requirements.txt` yoksa `pip install flask flask-sqlalchemy langchain langchain-community langchain-groq langchain-google-genai langgraph beautifulsoup4 faiss-cpu` vb. bağımlılıkları manuel yükleyin).*
 3.  Proje ana dizininde bir `.env` dosyası oluşturun ve API anahtarlarınızı ekleyin:
     ```env
     GOOGLE_API_KEY=sizin_gemini_anahtariniz
@@ -57,7 +52,4 @@ Navi 2.0, sistemi yepyeni bir zeka ve arayüz boyutuyla tanıştırıyor!
     ```bash
     python app.py
     ```
-5.  Tarayıcınızda `http://127.0.0.1:5001` adresine giderek Navi 2.0 ile tanışın!
-
----
-*Gelecek Sürüm (Navi 3.0) için Planlananlar: React Native Mobil Entegrasyonu ve Sesli Etkileşim (Voice/TTS / Speech-to-Text).*
+5.  Tarayıcınızda `http://127.0.0.1:5001` adresine giderek Navi 3.0'ın sınırlarını zorlayın!

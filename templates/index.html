@@ -102,16 +102,23 @@
                     </div>
                 </div>
                 
-                <input type="file" id="document-upload" accept="image/*,.pdf,.txt,.md" style="display: none;">
+                <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                <input type="file" id="document-upload" accept=".pdf,.txt,.md,.docx,.csv" style="display: none;">
                 <div id="file-pill-container" style="display: none; align-items: center; background: rgba(149, 29, 209, 0.2); color: var(--accent); padding: 5px 12px; border-radius: 12px; margin-bottom: 10px; font-size: 13px;">
                     <i class="fa-solid fa-file-pdf" style="margin-right: 6px;"></i>
                     <span id="file-pill-name" style="margin-right: 10px; font-weight: 500;"></span>
                     <button id="remove-file-btn" style="background: none; border: none; color: var(--accent); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="input-box">
-                    <button id="attach-btn" class="icon-btn input-action-btn" title="Dosya Ekle">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
+                    <div style="position: relative;">
+                      <button id="attach-btn" class="icon-btn input-action-btn" title="Ekle">
+                          <i class="fa-solid fa-plus"></i>
+                      </button>
+                      <div id="attach-dropdown" class="attach-dropdown">
+                          <button id="menu-image-upload"><i class="fa-solid fa-image"></i> Fotoğraf Yükle</button>
+                          <button id="menu-doc-upload"><i class="fa-solid fa-file-pdf"></i> Belge Yükle</button>
+                      </div>
+                  </div>
                     <div class="custom-model-select">
                         <div class="select-trigger" id="model-select-trigger" title="Model Seçimi">
                             <span id="selected-model-text">✨ Oto</span>

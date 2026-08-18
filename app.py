@@ -468,8 +468,8 @@ def run_task():
             resp = requests.get("https://api.groq.com/openai/v1/models", headers={"Authorization": f"Bearer {groq_key}"}, timeout=5)
             if resp.status_code == 200:
                 available_models = [m["id"] for m in resp.json().get("data", [])]
-                tool_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"]
-                groq_model = next((m for m in tool_models if m in available_models), "mixtral-8x7b-32768")
+                tool_models = ["llama-3.3-70b-versatile", "llama3-8b-8192", "llama3-70b-8192", "gemma2-9b-it"]
+                groq_model = next((m for m in tool_models if m in available_models), available_models[0] if available_models else "llama-3.3-70b-versatile")
             else:
                 groq_model = "llama-3.3-70b-versatile"
         except Exception:
@@ -536,7 +536,19 @@ def run_task():
                 new_mem = UserMemory(user_id=user_id, fact=fact)
                 db.session.add(new_mem)
                 db.session.commit()
-            return "Bilgi basariyla hafizaya kaydedildi."
+                
+            from langchain_core.documents import Document
+            from langchain_community.vectorstores import FAISS
+            user_index_path = os.path.join(USER_MEMORY_FAISS_FOLDER, str(user_id))
+            doc = Document(page_content=fact, metadata={"source": "user_memory"})
+            if os.path.exists(user_index_path):
+                user_vectorstore = FAISS.load_local(user_index_path, embeddings_model, allow_dangerous_deserialization=True)
+                user_vectorstore.add_documents([doc])
+            else:
+                user_vectorstore = FAISS.from_documents([doc], embeddings_model)
+            user_vectorstore.save_local(user_index_path)
+            
+            return "Bilgi basariyla kalici akilli hafizaya (FAISS) kaydedildi."
         except Exception as e:
             return f"Hata: {e}"
             
@@ -545,10 +557,22 @@ def run_task():
 
     dynamic_prompt = system_prompt
     if user_id:
-        memories = UserMemory.query.filter_by(user_id=user_id).all()
-        if memories:
-            facts = "\n".join([f"- {m.fact}" for m in memories])
-            dynamic_prompt += f"\n\n[SISTEM BILGISI: UZUN SURELI HAFIZA]\nBu kullanici hakkinda sunlari biliyorsun:\n{facts}\nCevap verirken bunlari dikkate al, ancak sadece gerektiginde bahset."
+        from langchain_community.vectorstores import FAISS
+        user_index_path = os.path.join(USER_MEMORY_FAISS_FOLDER, str(user_id))
+        
+        # Sadece ilgili (skoru yuksek) ilk 3 bilgiyi getir (Memory Scoring)
+        if os.path.exists(user_index_path):
+            try:
+                user_vectorstore = FAISS.load_local(user_index_path, embeddings_model, allow_dangerous_deserialization=True)
+                results = user_vectorstore.similarity_search_with_score(question, k=3)
+                if results:
+                    facts_str = ""
+                    for doc, score in results:
+                        relevance = max(0, int(100 - (score * 40)))
+                        facts_str += f"- {doc.page_content} (Alaka Puani: %{relevance})\n"
+                    dynamic_prompt += f"\n\n[SISTEM BILGISI: AKILLI HAFIZA (MEMORY SCORING)]\nBu kullanici hakkinda su anki sordugu soruyla alakali en onemli bilgiler:\n{facts_str}\nCevap verirken bunlari dikkate al, ancak sadece gerektiginde bahset."
+            except Exception as e:
+                print("FAISS Memory Error:", e)
 
     try:
         primary_llm = llms[0]
@@ -557,39 +581,47 @@ def run_task():
         else:
             llm_with_fallbacks = primary_llm
         
-        research_tools = [t for t in request_tools if t.name in ["wikipedia", "internet_search", "get_weather", "read_webpage"]]
-        math_tools = [t for t in request_tools if t.name in ["calculate"]]
-        general_tools = [t for t in request_tools if t.name in ["save_user_memory"]]
-        coder_tools = [t for t in request_tools if t.name in ["execute_python_code", "internet_search"]]
+        sirius_tools = [t for t in request_tools if t.name in ["wikipedia", "internet_search", "get_weather", "read_webpage"]]
+        vega_tools = [t for t in request_tools if t.name in ["calculate"]]
+        nova_tools = [t for t in request_tools if t.name in ["save_user_memory"]]
+        orion_tools = [t for t in request_tools if t.name in ["execute_python_code", "internet_search"]]
+        lyra_tools = [t for t in request_tools if t.name in ["internet_search", "read_webpage"]]
+        rigel_tools = [t for t in request_tools if t.name in ["internet_search", "execute_python_code"]]
         
-        research_prompt = dynamic_prompt + "\n[GOREV: ARAÇSTIRMACI]\nSadece arastirma ve okuma yap."
-        math_prompt = dynamic_prompt + "\n[GOREV: MATEMATIKCI]\nSadece matematik problemleri coz."
-        general_prompt = dynamic_prompt + "\n[GOREV: GENEL ASISTAN]\nSohbet et ve gerekirse hafiza kaydet."
-        coder_prompt = dynamic_prompt + "\n[GOREV: YAZILIMCI]\nSen bir Python uzmanisin. Istenen isleri yapmak veya veri analizi/hesaplama gerceklestirmek icin Python kodu yaz ve 'execute_python_code' araciyla calistirarak sonucunu ogren. Cikti almak icin print() kullanmayi unutma."
+        sirius_prompt = dynamic_prompt + "\n[GOREV: SIRIUS (Arastirmaci)]\nSen bilgiye ac bir arastirmacisin. Sadece arastirma ve okuma yaparsin."
+        vega_prompt = dynamic_prompt + "\n[GOREV: VEGA (Matematik Uzmani)]\nSen mantik ve matematigin yildizisin. Sadece problemleri ve denklemleri coz."
+        nova_prompt = dynamic_prompt + "\n[GOREV: NOVA (Genel Asistan)]\nSen arkadas canlisi bir sohbet asistanisin. Gerekirse hafiza kaydet."
+        orion_prompt = dynamic_prompt + "\n[GOREV: ORION (Yazilim Uzmani)]\nSen kodlarin efendisisin. Istenen isleri yapmak icin Python kodu yaz ve 'execute_python_code' ile calistir. Sonuclari gormek icin print() kullan!"
+        lyra_prompt = dynamic_prompt + "\n[GOREV: LYRA (Kreatif Metin Yazari)]\nSen kelimelerin efendisisin. Yaratici yazilar, makaleler, e-postalar yazarsin ve edebi bir dil kullanirsin."
+        rigel_prompt = dynamic_prompt + "\n[GOREV: RIGEL (Gorsel ve Veri Analisti)]\nSen fotograflari ve verileri okuyan keskin gozlu bir uzmansin. Gorsellerdeki detaylari analiz et."
         
         polaris_tools = request_tools.copy()
         polaris_prompt = dynamic_prompt + """
-[GOREV: POLARIS (BAŞ MİMAR)]
-Sen Polaris'in yürütme (Executor) lobusun. Sohbet geçmişinde zaten senin için hazırlanmış bir [PLAN] var. 
-Artık planı yapmana, strateji düşünmene veya uzun metinler yazmana gerek yok. 
-SADECE planıdaki adımlara harfiyen uyarak araçları (tools) sırayla çalıştır ve görev tamamlandığında nihai sonucu derle.
+[GOREV: POLARIS (Bas Mimar)]
+Sen Polaris'in yurutme (Executor) lobusun. Sohbet gecmisinde zaten senin icin hazirlanmis bir [PLAN] var. 
+Artik plan yapmana, strateji dusunmene veya uzun metinler yazmana gerek yok. 
+SADECE plandaki adimlara harfiyen uyarak araclari (tools) sirayla calistir ve gorev tamamlandiginda nihai sonucu derle.
 """
 
-        research_agent = create_react_agent(llm_with_fallbacks, research_tools, prompt=research_prompt)
-        math_agent = create_react_agent(llm_with_fallbacks, math_tools, prompt=math_prompt)
-        general_agent = create_react_agent(llm_with_fallbacks, general_tools, prompt=general_prompt)
-        coder_agent = create_react_agent(llm_with_fallbacks, coder_tools, prompt=coder_prompt)
+        sirius_agent = create_react_agent(llm_with_fallbacks, sirius_tools, prompt=sirius_prompt)
+        vega_agent = create_react_agent(llm_with_fallbacks, vega_tools, prompt=vega_prompt)
+        nova_agent = create_react_agent(llm_with_fallbacks, nova_tools, prompt=nova_prompt)
+        orion_agent = create_react_agent(llm_with_fallbacks, orion_tools, prompt=orion_prompt)
+        lyra_agent = create_react_agent(llm_with_fallbacks, lyra_tools, prompt=lyra_prompt)
+        rigel_agent = create_react_agent(llm_with_fallbacks, rigel_tools, prompt=rigel_prompt)
         polaris_agent = create_react_agent(llm_with_fallbacks, polaris_tools, prompt=polaris_prompt)
 
         router_prompt = (
-            "Asagidaki kullanici mesajini oku ve hangi uzman ajanin cevaplamasi gerektigine çıkarar ver.\n"
-            "SADECE 'RESEARCHER', 'MATH', 'CODER', 'POLARIS' veya 'GENERAL' kelimelerinden birini dondur.\n"
+            "Asagidaki kullanici mesajini oku ve hangi uzman ajanin cevaplamasi gerektigine karar ver.\n"
+            "SADECE 'SIRIUS', 'VEGA', 'ORION', 'POLARIS', 'NOVA', 'LYRA', 'RIGEL' veya 'DEBATE' kelimelerinden birini dondur.\n"
             "Baska HICBIR sey yazma.\n\n"
-            "- Eger mesaj birden fazla adımdan oluşan çıkarmaşık bir islem, veya hem arama hem hesaplama/kodlama gibi çoklu zeka gerektiriyorsa: POLARIS\n"
-            "- Eger mesaj Python kodu yazmayi, grafik cizmeyi veya tek bir algoritmik problemi (kod ile) cozeyi gerektiriyorsa: CODER\n"
-            "- Eger mesaj matematiksel bir hesaplama, denlem veya problem cozumu gerektiriyorsa: MATH\n"
-            "- Eger mesaj guncel haber, hava durumu, wikipedia bilgisi veya internette arastirilmasi gereken bir konuysa: RESEARCHER\n"
-            "- Diger her turlu sohbet, hal hatir sorma, kisiligi hakkinda bilgi verme, genel soru icin: GENERAL\n\n"
+            "- Eger mesaj karsilastirma, tartisma, munazara veya beyin firtinasi iceriyorsa: DEBATE\n            - Eger mesaj birden fazla adimdan olusan karmasik bir islem gerektiriyorsa: POLARIS\n"
+            "- Eger mesaj resim iceriyorsa, gorsel inceleme veya resim analizi ise: RIGEL\n"
+            "- Eger mesaj yazi yazma, blog, makale, metin uretimi veya e-posta taslagi ise: LYRA\n"
+            "- Eger mesaj Python kodu yazmayi, script calistirmayi gerektiriyorsa: ORION\n"
+            "- Eger mesaj matematiksel bir hesaplama, problem cozumu ise: VEGA\n"
+            "- Eger mesaj guncel haber, hava durumu, internet arastirmasi ise: SIRIUS\n"
+            "- Diger her turlu sohbet, hal hatir sorma icin: NOVA\n\n"
             f"Kullanici mesaji: {question}"
         )
         route_content = llm_with_fallbacks.invoke(router_prompt).content
@@ -600,18 +632,30 @@ SADECE planıdaki adımlara harfiyen uyarak araçları (tools) sırayla çalış
         if "POLARIS" in route_response:
             agent_executor = polaris_agent
             selected_agent_name = "Polaris (Baş Mimar)"
-        elif "CODER" in route_response:
-            agent_executor = coder_agent
-            selected_agent_name = "Yazılım Uzmanı"
-        elif "MATH" in route_response:
-            agent_executor = math_agent
-            selected_agent_name = "Matematik Uzmanı"
-        elif "RESEARCHER" in route_response:
-            agent_executor = research_agent
-            selected_agent_name = "Araştırmacı Ajan"
+        elif "ORION" in route_response or "CODER" in route_response:
+            agent_executor = orion_agent
+            selected_agent_name = "Orion (Yazılım Uzmanı)"
+        elif "VEGA" in route_response or "MATH" in route_response:
+            agent_executor = vega_agent
+            selected_agent_name = "Vega (Matematik Uzmanı)"
+        elif "SIRIUS" in route_response or "RESEARCHER" in route_response:
+            agent_executor = sirius_agent
+            selected_agent_name = "Sirius (Araştırmacı)"
+        elif "DEBATE" in route_response:
+            agent_executor = None
+            selected_agent_name = "Münazara (Debate)"
+        elif "DEBATE" in route_response:
+            agent_executor = None
+            selected_agent_name = "Münazara (Debate)"
+        elif "LYRA" in route_response or "WRITER" in route_response:
+            agent_executor = lyra_agent
+            selected_agent_name = "Lyra (Metin Yazarı)"
+        elif "RIGEL" in route_response or "VISION" in route_response:
+            agent_executor = rigel_agent
+            selected_agent_name = "Rigel (Görsel Analist)"
         else:
-            agent_executor = general_agent
-            selected_agent_name = "Genel Asistan"
+            agent_executor = nova_agent
+            selected_agent_name = "Nova (Genel Asistan)"
             
     except Exception as e:
         return {"error": f"Ajan baslatilamadi: {str(e)}"}, 500
@@ -640,7 +684,30 @@ SADECE planıdaki adımlara harfiyen uyarak araçları (tools) sırayla çalış
 
             current_messages = list(messages_payload)
             
-            if selected_agent_name == "Polaris (Baş Mimar)":
+            if selected_agent_name == "Münazara (Debate)":
+                yield f"data: {{json.dumps({'type': 'action', 'content': '🎙️ Yönetici Navi: Konu beyin fırtınası gerektiriyor. Ajanlar Arası Münazara (Debate) başlatılıyor...'})}}\n\n"
+                
+                yield f"data: {{json.dumps({'type': 'action', 'content': '🧠 Sirius (Araştırmacı): Konuyu analiz edip ilk argümanı sunuyor...'})}}\n\n"
+                sirius_prompt = f"Sen Sirius'sun. Şu konuyu detaylıca analiz et ve güçlü bir argüman/taraf sun: {question}"
+                sirius_arg = llm_with_fallbacks.invoke(sirius_prompt).content
+                if isinstance(sirius_arg, list): sirius_arg = " ".join([c.get("text", "") for c in sirius_arg if isinstance(c, dict)])
+                yield f"data: {{json.dumps({'type': 'thought', 'content': f'**Sirius:**\n{sirius_arg}'})}}\n\n"
+                
+                yield f"data: {{json.dumps({'type': 'action', 'content': '💻 Orion (Yazılımcı): Sirius\'un argümanını eleştiriyor ve karşıt bir perspektif sunuyor...'})}}\n\n"
+                orion_prompt = f"Sen Orion'sun (Yazılımcı/Sistem Uzmanı). Sirius şu argümanı sundu:\n{sirius_arg}\nBu argümandaki zayıf noktaları bul, eleştir ve daha iyi/farklı bir teknik yaklaşım sun."
+                orion_arg = llm_with_fallbacks.invoke(orion_prompt).content
+                if isinstance(orion_arg, list): orion_arg = " ".join([c.get("text", "") for c in orion_arg if isinstance(c, dict)])
+                yield f"data: {{json.dumps({'type': 'thought', 'content': f'**Orion:**\n{orion_arg}'})}}\n\n"
+                
+                yield f"data: {{json.dumps({'type': 'action', 'content': '🌟 Polaris (Baş Mimar): Argümanları sentezleyip nihai kararı veriyor...'})}}\n\n"
+                polaris_prompt = f"Sen Polaris'sin (Baş Mimar). Konu: {question}\nSirius'un Savunması: {sirius_arg}\nOrion'un İtirazı: {orion_arg}\nBu iki görüşü sentezle, tartışmayı özetle ve kullanıcıya en mantıklı nihai kararı sun."
+                final_verdict = llm_with_fallbacks.invoke(polaris_prompt).content
+                if isinstance(final_verdict, list): final_verdict = " ".join([c.get("text", "") for c in final_verdict if isinstance(c, dict)])
+                yield f"data: {{json.dumps({'type': 'thought', 'content': f'**Polaris:**\n{final_verdict}'})}}\n\n"
+                
+                final_answer_accumulated = f"### 🧠 Sirius'un Analizi:\n{sirius_arg}\n\n### 💻 Orion'un Eleştirisi:\n{orion_arg}\n\n### 🌟 Polaris'in Sentezi (Nihai Karar):\n{final_verdict}"
+                
+            elif selected_agent_name == "Polaris (Baş Mimar)":
                 yield f"data: {json.dumps({'type': 'action', 'content': '🌟 Polaris: Görev analiz ediliyor ve stratejik planı oluşturuluyor...'})}\n\n"
                 planıner_prompt = f"Sen Polaris'in planılama lobusun. Aşağıdaki görevi çöçözmek için adım adım numaralıı bir planı çıçıkar. KESİNLİKLE ARAÇÇ (TOOL) KULLANMA. Sadece metin olarak planıı yaz.\n\nGörev: {question}"
                 planı_content = llm_with_fallbacks.invoke(planıner_prompt).content
@@ -655,7 +722,7 @@ SADECE planıdaki adımlara harfiyen uyarak araçları (tools) sırayla çalış
             revision_count = 0
             max_revisions = 1  # 1 ekstra revizyon
             
-            while revision_count <= max_revisions:
+            while revision_count <= max_revisions and selected_agent_name != "Münazara (Debate)":
                 worker_output = ""
                 
                 # UZMAN AJAN (Worker) DEVREDE

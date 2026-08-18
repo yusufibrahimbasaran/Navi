@@ -8,3 +8,8 @@ faiss_db/
 uploads/
 static/chart.png
 test_file.txt
+
+workspaces/
+user_memory_faiss/
+test.py
+trace.log
