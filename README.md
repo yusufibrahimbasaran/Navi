@@ -1,78 +1,60 @@
-# Navi 3.0 - Otonom Yapay Zeka Ajan Mimarisi 🚀
+# Navi 3.0: Otonom Yapay Zeka Mimarisi Kapsamlı Dokümantasyonu
 
-Navi, sıradan bir sor-cevap chatbotu olmaktan çok öteye geçen, LangChain ve LangGraph teknolojileri kullanılarak inşa edilmiş **Agentic (Otonom Ajan)** mimarisine sahip birinci sınıf bir web asistanıdır. Kendi kendine kod yazıp çalıştırabilen, araştırma yapabilen, fikirleri tartışabilen ve güvenliği sağlayan devasa bir yapay zeka ekibini bir araya getirir.
-
----
-
-## 🌟 Yeni Sürüm (Navi 3.0) Öne Çıkan Özellikleri
-Navi 3.0 ile "Otonom Yapay Zeka" vizyonumuzu tamamladık ve ajanların kendi aralarında tartıştığı, plan yaptığı, kod yazıp güvenliğini test ettiği mükemmel bir ekosistem kurduk!
-
-*   **🎙️ Ajanlar Arası Münazara (Multi-Agent Debate):** Karmaşık veya felsefi konularda tek bir ajanın cevabıyla yetinmiyoruz. **Sirius** (Araştırmacı) konuyu savunur, **Orion** (Yazılımcı) itiraz edip zayıf yönlerini bulur ve **Polaris** (Baş Mimar) bu fikirleri sentezleyerek size en mükemmel kararı sunar.
-*   **📁 İzole Çalışma Alanları (Workspace Sistemi):** Navi artık sizin için sadece kod yazmakla kalmıyor, o kodları çalıştırabileceği, test edebileceği ve rapor/dosya üretebileceği oturuma özel **izole klasörlerde (workspaces)** çalışıyor. Ajanlar bu klasörde dosya okur, yazar ve test eder.
-*   **🛡️ Güvenlik Kalkanı (Aegis Agent):** Otonom ajanların makinenizde kod çalıştırması risklidir. Navi 3.0'ın yerleşik güvenlik ajanı Aegis, tehlikeli komutları ve sistem dosyalarına müdahaleyi anında bloke eder.
-*   **🧠 Dinamik Vektör Hafızası (FAISS Memory Scoring):** Yalnızca eski mesajları değil, sizinle ilgili "kalıcı gerçekleri" FAISS vektör veritabanına kaydeder, alaka düzeyini (relevance) puanlar ve tam gerektiği anda hatırlar.
-*   **⚙️ Otomatik Hata Ayıklama (Auto-Correction):** Yazılımcı ajanımız Orion, kod yazdıktan sonra hata alırsa size bunu yansıtmaz. Kendi hatasını okur, düzeltir ve kod başarıyla çalışana kadar otonom olarak (maks. 3 kez) kendini iyileştirir.
-*   **⚡ Dinamik Model Fallback Ağı:** Groq (Llama 3), Gemini, OpenAI (GPT-4) veya Anthropic. Sistem bir modele ulaşamadığında veya model yayından kalktığında dinamik olarak çalışan API modellerini bulup çökmeden otonom geçiş yapar.
+**Geliştirici:** Yusuf İbrahim Başaran / VastAI
+**Sürüm:** 3.0.0 (Otonom & Multi-Agent Framework)
+**Tarih:** Ağustos 2026
 
 ---
 
-## 🎨 Navi 2.0 Özellikleri (Arayüz ve Kullanıcı Deneyimi)
-*   **Kusursuz Siber-Modern Arayüz (UI Yenilikleri):** *Glassmorphism* (yarı saydam cam) stiliyle tasarlanmış, akıcı animasyonlara sahip muazzam giriş, kayıt ekranları ve ana sohbet alanı.
-*   **Güvenlik Senkronizasyonu:** Sistem güvenliğini ve hafızanızı tek noktadan yönetmenizi sağlayan şık, sekmeli **Ayarlar** penceresi. Giriş yapılmadığında hassas özellikleri anında gizleyen altyapı.
-*   **Genişletilmiş Tarihçe:** Tamamen yeniden tasarlanmış sol menü (Sidebar) üzerinden önceki ajan sohbetlerinize dönüp nerede kaldığınızı görebilirsiniz.
-*   **Tam UTF-8 ve Türkçe Karakter Desteği:** Sistem genelinde kodlama yapısı yenilenerek tüm Türkçe ve özel karakter metin sorunları tamamen çözüldü.
+## 1. Yönetici Özeti (Executive Summary)
+Navi, basit bir "Soru-Cevap" (Chatbot) uygulamasından ziyade, kendi kendine karar verebilen, kod yazabilen, araştırma yapan ve hata ayıplayabilen gelişmiş bir **Ajan Ekosistemi (Agentic Workflow)** olarak tasarlanmıştır. Sıfırdan başlanarak adım adım inşa edilen bu mimari, Navi 3.0 sürümüyle birlikte tam otonom bir "Yapay Zeka Şirketi" simülasyonuna dönüşmüştür.
 
 ---
 
-## ⚙️ Core Özellikler (Navi 1.0'dan Miras)
-*   **Çoklu Ajan (Multi-Agent) Mimarisi:** Navi tek bir beyin değildir; bir **ekiptir**. Yönlendirici (Router) ajan görevi Yazılımcı, Araştırmacı veya Matematikçi ajanlara anlık dağıtır.
-*   **Denetmen (Reviewer):** Çıkan sonuç kullanıcıya iletilmeden önce katı bir Denetmen Ajan tarafından incelenir. Hata varsa (örn: eksik kod, güvenlik açığı), reddeder ve uzman ajana düzeltmesi için geri gönderir. 
-*   **Dinamik Araç Kullanımı (Tool Calling):** İnternette güncel arama yapabilir, web sayfalarının içeriğini okuyabilir, matematiksel işlemleri hatasız hesaplayabilir ve hava durumunu anlık çekebilir.
-*   **Canlı Veri Akışı (SSE Streaming):** Ajanların düşünme süreçleri, araç (tool) kullanımları ve aralarındaki tartışmalar saniye saniye canlı olarak kullanıcının ekranına yansıtılır. Arka planda ne dönüyorsa şeffafça görürsünüz.
+## 2. Navi 1.0: Temeller ve Çoklu Ajan (Multi-Agent) Doğuşu
+İlk sürüm, sistemin beynini oluşturan temel yönlendirme algoritmalarının atıldığı aşamaydı.
+
+*   **Yönlendirici (Router) Mimarisi:** Tek bir devasa yapay zeka yerine, gelen her kullanıcı isteğini (prompt) okuyup analiz eden ve görevi en uygun uzmana atayan bir "Yönetici Ajan" yapısı kuruldu.
+*   **Temel Araç Kullanımı (Tool Calling):** Ajanların dış dünyayla bağlantı kurabilmesi sağlandı. İnternette arama yapabilme (DuckDuckGo/Wikipedia) ve temel matematiksel işlemleri çözebilme yetenekleri eklendi.
+*   **Model Agnostik Altyapı:** Sistemin tek bir şirkete (örneğin sadece OpenAI'a) bağımlı olmaması için LangChain kullanılarak Groq (Llama), Gemini, Claude ve GPT modelleri arasında geçiş yapabilen esnek bir yapı kurgulandı.
 
 ---
 
-## 🌟 Yıldız Ajan Kadromuz
+## 3. Navi 2.0: Görsel Devrim, Şeffaflık ve Denetim
+İkinci sürüm, sistemin kullanıcıyla olan etkileşimini profesyonelleştiren ve arka plandaki zekayı dizginleyen büyük bir güncellemeydi.
 
-*   **Navi (Yönlendirici):** Tüm isteklerinizi analiz edip doğru departmana ileten yönetici ajan.
-*   **Polaris (Baş Mimar):** Karmaşık görevleri alt görevlere (DAG) bölen ve büyük resmi gören lider.
-*   **Sirius (Araştırmacı):** İnternette derinlemesine araştırmalar yapan ve kaynak toplayan ajan.
-*   **Orion (Yazılım Uzmanı):** Python kodları yazan, çalıştıran ve hataları kendi kendine düzelten mühendis.
-*   **Vega (Matematik Uzmanı):** Sayısal hesaplamaları sıfır hatayla yapan analitik ajan.
-*   **Lyra (Metin Yazarı):** Blog, e-posta veya makale üreten yaratıcı zeka.
-*   **Rigel (Veri Analisti):** Görsel veya veri dosyası yüklendiğinde bunları analiz eden uzman (Yakında tam sürüm!).
+*   **Kusursuz Siber-Modern Arayüz (UI):** *Glassmorphism* (yarı saydam cam) stiliyle baştan aşağı modern bir tasarıma geçildi. Göz yormayan koyu tema, yeni yan menü (Sidebar) ve estetik mesaj balonları eklendi.
+*   **Canlı Veri Akışı (SSE Streaming):** Ajanların o an ne düşündüğü, hangi aracı (tool) kullandığı ve hangi aşamada olduğu saniye saniye ekrana yansıtılarak tam bir şeffaflık sağlandı. Kullanıcı artık "Bekleniyor..." yazısı yerine ajanın zihin haritasını izleyebilmeye başladı.
+*   **Denetmen Ajan (Reviewer):** Üretilen hiçbir çıktı kullanıcıya doğrudan sunulmamaya başlandı. Çıktılar önce katı bir Denetmen Ajandan geçer; hata, eksik kod veya yanlışlık varsa reddedilerek uzman ajana "Bunu düzelt" komutuyla geri gönderilir.
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma
+## 4. Navi 3.0: Tam Otonomi ve Gelişmiş Bilişsel Yetenekler
+En büyük sıçrama olan Navi 3.0, sistemin sadece cevap veren değil, "yaşayan ve öğrenen" bir yapıya kavuşmasını sağladı.
 
-### Gereksinimler
-*   Python 3.9 veya üstü
-*   Gerekli API Anahtarları (Gemini, Groq, OpenAI, Anthropic - en az biri yeterlidir)
-
-### Adımlar
-1.  Projeyi klonlayın ve dizine gidin:
-    ```bash
-    git clone https://github.com/yusufibrahimbasaran/Navi.git
-    cd Navi
-    ```
-2.  Gerekli kütüphaneleri yükleyin:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *(Not: `requirements.txt` yoksa `pip install flask flask-sqlalchemy langchain langchain-community langchain-groq langchain-google-genai langgraph beautifulsoup4 faiss-cpu` vb. bağımlılıkları manuel yükleyin).*
-3.  Proje ana dizininde bir `.env` dosyası oluşturun ve API anahtarlarınızı ekleyin:
-    ```env
-    GOOGLE_API_KEY=sizin_gemini_anahtariniz
-    GROQ_API_KEY=sizin_groq_anahtariniz
-    OPENAI_API_KEY=sizin_openai_anahtariniz
-    ANTHROPIC_API_KEY=sizin_anthropic_anahtariniz
-    ```
-4.  Uygulamayı başlatın:
-    ```bash
-    python app.py
-    ```
-5.  Tarayıcınızda `http://127.0.0.1:5001` adresine giderek Navi 3.0 ile tanışın!
+*   **🧠 Dinamik Vektör Hafızası (FAISS Memory Scoring):** Klasik "sohbet geçmişi" yerine, kullanıcının kişisel bilgileri, mesleği ve zevkleri FAISS vektör veritabanına işlenmeye başlandı. Sistem bu verileri anlamsal olarak (Semantic Search) analiz eder ve her soruda "Bu kullanıcı için hangi hafıza kayıtlarım önemli?" diyerek alaka puanlaması (Scoring) yapar.
+*   **🛡️ Aegis (Güvenlik Kalkanı):** Ajanlara bilgisayarda kod çalıştırma yetkisi verildiği için "rm -rf" gibi zararlı sistem komutlarını anında bloke eden, yapay zekanın makineye zarar vermesini önleyen sarsılmaz bir güvenlik kalkanı (Guardrail) inşa edildi.
+*   **📁 İzole Çalışma Alanları (Workspace Sistemi):** Ajanların sizin için oluşturduğu dosyalar (Excel, TXT, Python scriptleri vb.) her oturuma özel sanal klasörlerde (Workspace) izole edilir. Ajanlar bu klasörlerdeki verileri okuyup kendi kendilerine test yapabilirler.
+*   **⚙️ Auto-Correction (Otomatik Hata Ayıklama):** Kod yazan ajan (Orion), yazdığı kod hata verdiğinde pes etmek yerine hatayı terminalden okur, kendi kodunu analiz eder ve kodu düzeltip (maksimum 3 kez) başarıya ulaşana kadar yeniden çalıştırır.
+*   **🎙️ Ajanlar Arası Münazara (Multi-Agent Debate):** İki farklı teknolojiyi kıyaslarken veya felsefi bir karar alırken sistem "Münazara Odası"nı açar. Araştırmacı ajan bir tezi savunurken, Yazılımcı ajan çürütmeye çalışır. Baş Mimar ajan ise bu fikirleri sentezleyerek kullanıcıya en nesnel ve kusursuz raporu sunar.
+*   **Dikey Ayarlar (Dashboard):** Sistemin hafıza kontrolleri, Aegis güvenlik durumu ve aktif API'lerin yönetildiği Discord/SaaS tarzı modern dikey ayarlar menüsü entegre edildi.
 
 ---
-*Gelecek Sürüm (Navi 4.0) için Planlananlar: React Native Mobil Entegrasyonu, Sesli Etkileşim (Voice/TTS) ve Tam Kapsamlı Belge Yükleme (RAG) Altyapısı.*
+
+## 5. Yıldız Ajan Kadrosu (Takım Mimarisi)
+Sistemdeki görev dağılımı astronomik kod adlarıyla sınıflandırılmıştır:
+
+1.  **Navi (Yönetici / Router):** Gelen her isteği analiz edip doğru odaya yönlendiren kapıdaki zeka.
+2.  **Polaris (Baş Mimar):** Büyük ve çok adımlı projeleri küçük görevlere (DAG - Yönlü Asiklik Grafik) bölen lider.
+3.  **Sirius (Araştırmacı):** İnternetteki güncel verileri, makaleleri ve haberleri saniyeler içinde tarayıp doğrulayan veri avcısı.
+4.  **Orion (Yazılım Uzmanı):** Çalışma alanında Python kodu yazan, çalıştıran, hataları ayıklayan mühendis.
+5.  **Vega (Matematik Uzmanı):** Sayısal hesaplamaları halüsinasyon görmeden (tam doğrulukla) çözen analitik zeka.
+6.  **Lyra (Metin Yazarı):** Pazarlama metinleri, blog yazıları ve duygusal iletişim konularında uzmanlaşmış yaratıcı ajan.
+7.  **Rigel (Veri / Görsel Analist):** Yüklenen tabloları, log dosyalarını veya resimleri inceleyecek (Versiyon 3.5/4.0 hedefleri arasında) vizyoner ajan.
+
+---
+
+## Sonuç
+**Navi 3.0**, sadece komut işleyen bir yazılım değil; kullanıcısını tanıyan, kendi kendine düşünen, hata yaptığında bunu fark edip düzelten, tartışan ve güvenlik sınırlarını koruyan modern bir "Dijital Çalışma Arkadaşı"dır. 
+
+*Bir sonraki ufuk (Navi 4.0): React Native ile mobil cihazlarda var olmak, kullanıcısıyla sesli olarak (Voice) dertleşebilmek ve devasa PDF/Belge arşivlerini saniyeler içinde analiz etmektir.*
