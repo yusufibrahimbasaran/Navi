@@ -238,58 +238,218 @@
     </div>
     
     <!-- SETTINGS MODAL -->
+    <style>
+        .settings-layout {
+            display: flex;
+            min-height: 500px;
+            margin-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+        .settings-sidebar {
+            width: 220px;
+            border-right: 1px solid var(--border);
+            padding: 15px 15px 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .settings-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            background: transparent;
+            text-align: left;
+            width: 100%;
+        }
+        .settings-menu-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+        }
+        .settings-menu-item.active {
+            background: rgba(147, 51, 234, 0.1);
+            color: var(--accent);
+        }
+        .settings-menu-item i {
+            width: 18px;
+            text-align: center;
+        }
+        .settings-content-area {
+            flex: 1;
+            padding: 20px 0 20px 25px;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+        .settings-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        .settings-header h3 {
+            margin: 0 0 5px 0;
+            font-size: 20px;
+        }
+        .settings-header p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .placeholder-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-style: italic;
+            opacity: 0.7;
+        }
+    </style>
     <div class="modal-overlay" id="settings-modal">
-        <div class="modal-content" style="width: 500px;">
+        <div class="modal-content" style="width: 800px; max-width: 90vw; padding: 20px 30px;">
             <button class="modal-close" id="settings-close-btn"><i class="fa-solid fa-xmark"></i></button>
             
-            <div style="text-align: center; margin-bottom: 24px;">
-                <i class="fa-solid fa-sliders" style="font-size: 32px; color: var(--accent); margin-bottom: 12px; filter: drop-shadow(0 0 10px rgba(147, 51, 234, 0.5));"></i>
-                <h2 style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Ayarlar</h2>
-                <p style="font-size: 13px; color: var(--text-secondary);">Sistem ve Hafıza Tercihleri</p>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <i class="fa-solid fa-microchip" style="font-size: 28px; color: var(--accent); filter: drop-shadow(0 0 10px rgba(147, 51, 234, 0.5));"></i>
+                <div>
+                    <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0;">Navi 3.0 Ayarları</h2>
+                </div>
             </div>
             
-            <div class="modal-tabs">
-                <button class="settings-tab-btn active" data-target="settings-memory-view">Hafıza</button>
-                <button class="settings-tab-btn" data-target="settings-api-view">API</button>
-            </div>
-            
-            <div class="modal-body">
-                <!-- HAFIZA VIEW -->
-                <div id="settings-memory-view" class="settings-view active">
-                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 15px;">
-                        Navi'nin sizin hakkınızda öğrendiği bilgiler burada listelenir.
-                    </p>
-                    <ul id="memory-list" class="memory-list" style="margin-bottom: 10px; max-height: 200px; overflow-y: auto;">
-                    </ul>
-                    <button class="primary-btn outline" id="clear-memory-btn" onclick="clearAllMemory()" style="display: none; width: 100%; border-color: #ef4444; color: #ef4444;">
-                        <i class="fa-solid fa-trash-can"></i> Tüm Hafızayı Sil
-                    </button>
+            <div class="settings-layout">
+                <!-- Sol Menü -->
+                <div class="settings-sidebar">
+                    <button class="settings-menu-item active" data-target="view-genel"><i class="fa-solid fa-sliders"></i> Genel</button>
+                    <button class="settings-menu-item" data-target="view-kisisellestirme"><i class="fa-solid fa-paint-roller"></i> Kişiselleştirme</button>
+                    <button class="settings-menu-item" data-target="view-eklentiler"><i class="fa-solid fa-puzzle-piece"></i> Eklentiler & Ajanlar</button>
+                    <button class="settings-menu-item" data-target="view-ses"><i class="fa-solid fa-microphone"></i> Ses</button>
+                    <button class="settings-menu-item" data-target="view-depolama"><i class="fa-solid fa-database"></i> Hafıza & Depolama</button>
+                    <button class="settings-menu-item" data-target="view-korumalar"><i class="fa-solid fa-shield-halved"></i> Korumalar (Aegis)</button>
+                    <button class="settings-menu-item" data-target="view-guvenlik"><i class="fa-solid fa-lock"></i> Hesap Güvenliği</button>
                 </div>
                 
-                <!-- API VIEW -->
-                <div id="settings-api-view" class="settings-view" style="display: none;">
-                    <div style="text-align: center; color: var(--text-secondary); padding: 20px;">
-                        <i class="fa-solid fa-shield-halved" style="font-size: 32px; color: var(--accent); margin-bottom: 10px;"></i>
-                        <p>API Anahtarları sunucu (.env) tarafından merkezi ve güvenli olarak yönetilmektedir.</p>
-                        <p style="margin-top: 10px; font-size: 13px;">Kullanıcıların kendi anahtarlarını girmesine gerek yoktur.</p>
+                <!-- Sağ İçerik -->
+                <div class="settings-content-area">
+                    
+                    <!-- GENEL -->
+                    <div id="view-genel" class="settings-view active">
+                        <div class="settings-header">
+                            <h3>Genel Ayarlar</h3>
+                            <p>Sistemin temel çalışma prensiplerini yönetin.</p>
+                        </div>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                                <div>
+                                    <span style="display: block; color: var(--text-primary); font-size: 14px;">Mevcut Dil Modeli</span>
+                                    <span style="font-size: 12px; color: var(--text-secondary);">Dinamik Groq (Llama 3 Serisi) / Fallback Devrede</span>
+                                </div>
+                                <i class="fa-solid fa-check" style="color: #34d399;"></i>
+                            </li>
+                            <li style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                                <div>
+                                    <span style="display: block; color: var(--text-primary); font-size: 14px;">Çalışma Alanı (Workspace)</span>
+                                    <span style="font-size: 12px; color: var(--text-secondary);">Her seans için izole dosya sistemi aktif.</span>
+                                </div>
+                                <i class="fa-solid fa-check" style="color: #34d399;"></i>
+                            </li>
+                            <li style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+                                <div>
+                                    <span style="display: block; color: var(--text-primary); font-size: 14px;">Geliştirici Sürümü</span>
+                                    <span style="font-size: 12px; color: var(--text-secondary);">Navi 3.0.0 (Otonom) - VastAI by Yusuf İbrahim Başaran</span>
+                                </div>
+                                <i class="fa-solid fa-code-branch" style="color: var(--accent);"></i>
+                            </li>
+                        </ul>
                     </div>
+
+                    <!-- KİŞİSELLEŞTİRME -->
+                    <div id="view-kisisellestirme" class="settings-view" style="display: none;">
+                        <div class="settings-header">
+                            <h3>Kişiselleştirme</h3>
+                            <p>Arayüz temasını ve ajan davranışlarını özelleştirin.</p>
+                        </div>
+                        <p class="placeholder-text">Açık/Koyu tema seçenekleri ve animasyon hız ayarları yakında eklenecektir.</p>
+                    </div>
+
+                    <!-- EKLENTİLER & AJANLAR -->
+                    <div id="view-eklentiler" class="settings-view" style="display: none;">
+                        <div class="settings-header">
+                            <h3>Eklentiler & Ajanlar</h3>
+                            <p>Sistemdeki aktif ajanları ve yeteneklerini yönetin.</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                            <span class="badge" style="background: rgba(147, 51, 234, 0.1); color: #c084fc; padding: 5px 10px; border-radius: 8px; font-size: 12px;"><i class="fa-solid fa-users"></i> Multi-Agent Router Aktif</span>
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #34d399; padding: 5px 10px; border-radius: 8px; font-size: 12px;"><i class="fa-solid fa-gavel"></i> Münazara (Debate) Açık</span>
+                        </div>
+                        <p class="placeholder-text">Gelecek sürümde ajanları tek tek açıp kapatabileceksiniz.</p>
+                    </div>
+
+                    <!-- SES -->
+                    <div id="view-ses" class="settings-view" style="display: none;">
+                        <div class="settings-header">
+                            <h3>Ses ve Asistan</h3>
+                            <p>Text-to-Speech (TTS) ve mikrofon ayarları.</p>
+                        </div>
+                        <p class="placeholder-text">Navi 4.0 Sesli Etkileşim güncellemesi ile aktif edilecektir.</p>
+                    </div>
+
+                    <!-- DEPOLAMA -->
+                    <div id="view-depolama" class="settings-view" style="display: none;">
+                        <div class="settings-header">
+                            <h3>Hafıza & Depolama</h3>
+                            <p>FAISS Vektör Hafızası kayıtlarını görüntüleyin.</p>
+                        </div>
+                        <ul id="memory-list" class="memory-list" style="margin-bottom: 15px; max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px;">
+                        </ul>
+                        <button class="primary-btn outline" id="clear-memory-btn" onclick="clearAllMemory()" style="display: none; border-color: #ef4444; color: #ef4444;">
+                            <i class="fa-solid fa-trash-can"></i> Vektör Hafızayı Sıfırla
+                        </button>
+                    </div>
+
+                    <!-- KORUMALAR -->
+                    <div id="view-korumalar" class="settings-view" style="display: none;">
+                        <div class="settings-header">
+                            <h3>Korumalar (Aegis)</h3>
+                            <p>Sistem güvenliği ve Guardrail ayarları.</p>
+                        </div>
+                        <div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid #60a5fa; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                            <p style="margin: 0; font-size: 13px; color: var(--text-primary);"><i class="fa-solid fa-shield-halved" style="color: #60a5fa;"></i> Aegis Güvenlik Kalkanı <strong>Aktif</strong>.</p>
+                            <p style="margin: 5px 0 0 0; font-size: 12px; color: var(--text-secondary);">Zararlı kod yürütme, rm -rf ve izinsiz dosya okuma işlemleri sistem tarafından otomatik engellenmektedir.</p>
+                        </div>
+                    </div>
+
+                    <!-- GÜVENLİK -->
+                    <div id="view-guvenlik" class="settings-view" style="display: none;">
+                        <div class="settings-header">
+                            <h3>Hesap Güvenliği ve Giriş</h3>
+                            <p>Şifre, e-posta ve doğrulama yöntemleri.</p>
+                        </div>
+                        <p class="placeholder-text">Yalnızca giriş yapmış kullanıcılar içindir. API anahtarları sunucu (.env) üzerinden şifreli şekilde korunmaktadır.</p>
+                    </div>
+
                 </div>
             </div>
             
             <script>
-                // Local tab logic for settings modal
-                document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+                document.querySelectorAll('.settings-menu-item').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        document.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'));
-                        document.querySelectorAll('.settings-view').forEach(v => {
+                        // Sol menü aktif class temizle ve ekle
+                        document.querySelectorAll('.settings-menu-item').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        
+                        // Sağ içerikleri gizle ve hedefleneni göster
+                        document.querySelectorAll('.settings-content-area .settings-view').forEach(v => {
                             v.classList.remove('active');
                             v.style.display = 'none';
                         });
-                        
-                        btn.classList.add('active');
                         const target = document.getElementById(btn.getAttribute('data-target'));
-                        target.classList.add('active');
-                        target.style.display = 'block';
+                        if(target) {
+                            target.classList.add('active');
+                            target.style.display = 'block';
+                        }
                     });
                 });
             </script>

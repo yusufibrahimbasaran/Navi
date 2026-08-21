@@ -1,57 +1,51 @@
-# Navi 3.0: Otonom Yapay Zeka Mimarisi Kapsamlı Dokümantasyonu
+# Navi 3.1: Stabil Otonom Çoklu Ajan (Multi-Agent) Sistemi
 
 **Geliştirici:** Yusuf İbrahim Başaran / VastAI
-**Sürüm:** 3.0.0 (Otonom & Multi-Agent Framework)
+**Sürüm:** 3.1.0 (Stabilite & Güvenlik Güncellemesi)
 **Tarih:** Ağustos 2026
 
 ---
 
 ## 1. Yönetici Özeti (Executive Summary)
-Navi, basit bir "Soru-Cevap" (Chatbot) uygulamasından ziyade, LangChain ve LangGraph temellerine dayanan bir **Ajan Ekosistemi (Agentic Workflow)** olarak tasarlanmıştır. Navi 3.0 sürümü, çoklu ajan (multi-agent) mimarisinin sınırlarını zorlayarak sistemin yapısal bir "Yapay Zeka Departmanları" simülasyonu olarak çalışmasını hedefler. 
+Navi, LangChain ve LangGraph temellerine dayanan şeffaf ve modüler bir **Ajan Ekosistemi (Agentic Workflow)** prototipidir. Navi 3.1 sürümü, önceki sürümlerde tasarlanan otonom yetenekleri laboratuvar ortamından çıkarıp, uç vakalara (edge cases) karşı dirençli ve hata yapmaz bir stabiliteye kavuşturmuştur.
 
-*Not: Navi, tam otonom ve kusursuz bir ticari şirket simülasyonu değil; otonom yetenekleri test edip geliştirdiğimiz, şeffaf ve modüler bir AR-GE altyapısıdır.*
-
----
-
-## 2. Navi 1.0: Temeller ve Çoklu Ajan (Multi-Agent) Doğuşu
-*   **Yönlendirici (Router) Mimarisi:** Gelen her kullanıcı isteğini okuyup (Zero-shot classification) görevi en uygun uzmana atayan bir "Yönetici Ajan" yapısı kuruldu.
-*   **Temel Araç Kullanımı (Tool Calling):** Ajanların dış dünyayla bağlantı kurabilmesi sağlandı. İnternette arama yapabilme ve dış kaynaklara erişim yetenekleri eklendi.
-*   **Model Agnostik Altyapı:** Sistemin tek bir modele bağımlı olmaması için Groq (Llama), Gemini, Claude ve GPT modelleri arasında otomatik geçiş (Fallback) yapabilen esnek bir yapı kurgulandı.
+*Not: Navi, tam otonom ve kusursuz bir ticari şirket simülasyonu değil; otonom yetenekleri test edip geliştirdiğimiz bir AR-GE altyapısıdır.*
 
 ---
 
-## 3. Navi 2.0: Görsel Devrim, Şeffaflık ve Denetim
-*   **Kusursuz Siber-Modern Arayüz (UI):** *Glassmorphism* stiliyle baştan aşağı modern bir tasarıma geçildi. Göz yormayan koyu tema ve estetik mesaj balonları eklendi.
-*   **Canlı Veri Akışı (SSE Streaming):** Ajanların araç kullanımları ve düşünme süreçleri saniye saniye ekrana yansıtılarak tam bir şeffaflık sağlandı.
-*   **Denetmen Ajan (Reviewer) Darboğazı ve Devre Kesici:** Üretilen çıktılar doğrudan kullanıcıya sunulmadan önce "Reviewer" ajan tarafından incelenir. 
-    *   *Circuit Breaker (Devre Kesici):* Reviewer mimarisi, latency (gecikme) ve API maliyetlerini artırabileceği için bir üst sınır (max_revisions) getirilmiştir. Eğer sistem aynı döngüye girip (False Negative) reddedilmeye devam ederse, üst sınıra ulaşıldığında sistem döngüyü zorla kırar ve "Maksimum revizyona ulaşıldı" uyarısıyla elde edilen en iyi sonucu kullanıcıya (insana) iletir.
+## 2. Önceki Sürümlerden Kalan Temel Yapıtaşları
+*   **Yönlendirici (Router) Mimarisi:** Gelen her kullanıcı isteğini okuyup (Zero-shot classification) görevi en uygun uzmana atayan bir "Yönetici Ajan" (Navi) yapısı.
+*   **Model Agnostik Fallback Sistemi (GÜNCELLENDİ):** Sistemin tek bir modele bağımlı olmaması için GPT, Gemini ve Claude modelleri arasında otomatik geçiş kurgulanmıştır. *Groq API altyapısı, yeni modellerinin araç kullanımı (Tool Calling) desteklememesi nedeniyle 3.1 sürümüyle birlikte otomatik model havuzundan (Auto-fallback) geçici olarak çıkarılmış; sistemin ana iskeleti, stabilitesi kanıtlanmış OpenAI (GPT) ve Gemini (3.5-Flash) modellerine emanet edilmiştir.*
+*   **Şeffaf Siber-Modern Arayüz:** *Glassmorphism* stiliyle baştan aşağı modern bir tasarım ve SSE Streaming ile ajanların arka plandaki düşünme süreçlerinin saniye saniye ekrana yansıtılması.
 
 ---
 
-## 4. Navi 3.0: Tam Otonomi ve Gelişmiş Bilişsel Yetenekler
-En büyük sıçrama olan Navi 3.0, sistemin "yaşayan ve öğrenen" bir yapıya kavuşmasını sağladı.
+## 3. Navi 3.1: Stabilite, İzolasyon ve Güvenlik (Mevcut Durum)
+Navi 3.1, 3.0 ile gelen iddiaları gerçekten koda döken ve stabil çalışmasını sağlayan "Güvenlik ve İzolasyon" güncellemesidir.
 
-*   **🧠 Dinamik Vektör Hafızası (FAISS Memory Scoring) ve Gizlilik:** Kullanıcının kişisel bilgileri, FAISS vektör veritabanına işlenerek sorulara özel "Alaka Puanlaması (Scoring)" yapılır. 
-    *   *Veri Gizliliği:* Toplanan tüm kişisel vektör verileri lokal sistemde (`/faiss_db`) tutulur. Kullanıcı, dikey ayarlar menüsündeki "Vektör Hafızayı Sıfırla" butonuyla tüm kişisel izlerini ve geçmişini **tek tıkla ve kalıcı olarak silebilir**.
-*   **🛡️ Aegis (Güvenlik Kalkanı):** Otonom kod yürütme yetkisi taşıyan ajanların "rm -rf" veya sistem dizini okuma gibi zararlı eylemleri gerçekleştirmesini önlemek için kurulan Regex tabanlı güvenlik kalkanı (Guardrail).
-*   **📁 İzole Çalışma Alanları (Workspace Sistemi):** Ajanların oluşturduğu veri dosyaları (CSV, TXT, kod) her oturuma özel izole `/workspaces/session_id` klasörlerinde çalıştırılır.
-*   **⚙️ Auto-Correction (Otomatik Hata Ayıklama):** Kod yazan ajan (Orion), yazdığı kod hata verdiğinde döngüye girer. Maksimum 3 deneme sonucunda hata çözülemezse, ajan sessizce durmaz; hatanın son halini ekrana basarak problemi **kullanıcıya (insana) eskale eder**.
-*   **🎙️ Ajanlar Arası Münazara (Multi-Agent Debate):** İki farklı teknolojiyi kıyaslarken sistem "Münazara Odası"nı açar. Araştırmacı ajan bir tezi savunurken, Yazılımcı ajan çürütmeye çalışır. Baş Mimar ajan ise bu fikirleri sentezler. 
+*   **🛡️ Aegis Güvenlik Kalkanı (AKTİF):** Orion (Yazılımcı Ajan) otonom kod yürütme yetkisine sahiptir. Ancak 3.1 güncellemesi ile birlikte `os.system`, `subprocess`, `rm -rf` gibi tehlikeli sistem komutları **Aegis** adlı Regex tabanlı güvenlik kalkanı tarafından anında tespit edilip bloke edilmektedir. Ajanlar artık sunucuyu ele geçiremez.
+*   **📁 İzole Çalışma Alanları / Workspace (AKTİF):** Ajanların oluşturduğu veya okuduğu dosyalar artık doğrudan ana proje dizininde değil; ajanların thread-safe bir şekilde içine hapsedildiği özel `workspaces/local_user` dizininde yürütülür. Sistem dosyaları tamamen güvendedir.
+*   **🛑 Denetmen Ajan / Reviewer (AKTİF):** Üretilen çıktılar doğrudan kullanıcıya sunulmadan önce "Reviewer" ajan tarafından incelenir. 3.1 güncellemesiyle `.upper()` tip dönüşüm hatası gibi yapısal problemler giderilmiş; döngü (False Negative) kırıcı *Circuit Breaker* sistemi stabilize edilmiştir (Maksimum 1 revizyon).
+*   **⚠️ RAG ve Vektör Hafızası (DURDURULDU):** PDF okuma, dosya yükleme ve FAISS entegrasyonu, mevcut altyapı kütüphanelerinde yaşanan derin çatışmalar nedeniyle **Navi 3.1 sürümünde geçici olarak devre dışı bırakılmıştır.** (Hedef Navi 4.0).
 
 ---
 
-## 5. Yıldız Ajan Kadrosu (Takım Mimarisi)
+## 4. Yıldız Ajan Kadrosu (Takım Mimarisi)
+Sistemde aktif olarak çalışan 7 farklı departman bulunmaktadır:
+
 1.  **Navi (Yönetici / Router):** İstekleri analiz edip doğru odaya yönlendiren kapıdaki zeka.
 2.  **Polaris (Baş Mimar):** Büyük ve çok adımlı projeleri küçük görevlere bölen strateji ajanı.
-3.  **Sirius (Araştırmacı):** İnternetteki güncel verileri tarayan veri avcısı.
-4.  **Orion (Yazılım Uzmanı):** Çalışma alanında kod yazan ve otonom hata ayıplayabilen mühendis.
-5.  **Vega (Matematik Uzmanı):** LLM'lerin matematikte halüsinasyon görme (yanlış hesaplama) zafiyetini aşmak için, matematiksel ifadeleri doğrudan sembolik hesaplama araçlarıyla (Python eval/math modülleri) çözerek %100 kesin (deterministik) sonuçlar üreten analitik ajan.
-6.  **Lyra (Metin Yazarı):** Blog yazıları ve editoryal içeriklerde uzmanlaşmış ajan.
+3.  **Sirius (Araştırmacı):** İnternette arama yapabilen bilgi avcısı.
+4.  **Orion (Yazılım Uzmanı):** Çalışma alanında (Workspace) izole olarak Python kodu yazan, çalıştıran mühendis.
+5.  **Vega (Matematik Uzmanı):** LLM'lerin matematikte halüsinasyon görmesini engellemek için sembolik hesaplama ile deterministik sonuçlar üreten analitik ajan.
+6.  **Lyra (Metin Yazarı):** Editoryal içeriklerde uzmanlaşmış ajan.
+7.  **Münazara Odası (Debate):** Araştırmacı ile Yazılımcı ajanların birbiriyle tartıştığı, Baş Mimar'ın sentez yaptığı çoklu-ajan beyin fırtınası komitesi.
 
 ---
 
-## 6. Navi 4.0 Vizyonu ve Yol Haritası (Gelecek Hedefleri)
-Şu an aktif olmayan ancak ar-ge aşamasında olan bir sonraki sürüm hedefleri:
-*   **Rigel (Veri / Görsel Analist):** Kullanıcıların PDF, Excel veya görsel (Vision) yükleyip tam kapsamlı RAG mimarisiyle derin analiz yaptırabileceği yeni nesil ajan.
-*   **React Native Mobil App:** Sadece web üzerinde değil, iOS ve Android cihazlarda cebinizde taşıyabileceğiniz yerel uygulamalar.
-*   **Sesli Asistan (Voice/TTS):** Yazı ötesine geçerek insan-makine etkileşimini doğrudan ses dalgalarına taşıyacak STT/TTS entegrasyonu.
+## 5. Navi 4.0 Vizyonu ve Yol Haritası (Gelecek Hedefleri)
+Navi 3.1 ile core (çekirdek) otonomi sistemleri stabilize edildikten sonra, Navi 4.0 için hedeflenen adımlar şunlardır:
+
+*   **Mobil Uygulama (React Native):** Navi'nin yeteneklerini cebinize taşıyacak, yerel (native) iOS ve Android uygulamaları.
+*   **Sesli Asistan (Voice / STT & TTS):** Sistemle klavye kullanmadan, doğrudan sesli olarak interaktif şekilde konuşabilme yeteneği.
+*   **Gelişmiş Görsel ve Belge Analizi (Rigel Dönüşü):** Navi 3.1'de rafa kaldırılan RAG sisteminin, yapay zekanın "görme" (Vision) yetenekleriyle birleşerek kusursuz bir belge analiz aracına (Rigel) dönüştürülmesi.

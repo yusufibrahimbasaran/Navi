@@ -210,7 +210,15 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
                 addLogToAgent('error', errorMsg);
                 
                 // Ayrıca ana sohbet ekranında göster ki kullanıcı takıldığını düşünmesin
-                msgDiv.innerHTML = `<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`;
+                
+                if (typeof msgDiv !== 'undefined') {
+                    msgDiv.innerHTML = `<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`;
+                } else {
+                    const errorDiv = document.createElement("div");
+                    errorDiv.className = "message system-message";
+                    errorDiv.innerHTML = `<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`;
+                    chatBox.appendChild(errorDiv);
+                }
                 resetUI();
                 return;
             }

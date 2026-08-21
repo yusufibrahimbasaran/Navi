@@ -22,7 +22,8 @@ from langchain_community.cache import SQLiteCache
 set_llm_cache(SQLiteCache(database_path="langchain_cache.db"))
 
 app = Flask(__name__)
-app.secret_key = "super_secret_navi_key_2026"
+import os
+app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///navi.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -151,18 +152,36 @@ def read_webpage(url: str) -> str:
 def execute_python_code(code: str) -> str:
     """
     Python kodu calistirir ve konsol ciktisini (stdout) dondurur.
-    Gorevleri coçözmek veya veri analizi yapmak icin bu araci kullanin.
+    Gorevleri coezmek veya veri analizi yapmak icin bu araci kullanin.
     Kritik kural: Kodun sonucunu gormek icin mutlaka print() kullanmalisiniz!
     Sistem dosyalarini silmeyin veya zarar vermeyin.
     """
     import sys
     import io
+    import os
+    import re
     
+    
+    # AEGIS: GUVENLIK KALKANI (REGEX)
+    dangerous_patterns = [
+        r"os\.system", r"os\.popen", r"subprocess", r"shutil\.rmtree",
+        r"rm\s+-rf", r"sys\.exit", r"eval\(", r"exec\("
+    ]
+    for pattern in dangerous_patterns:
+        if re.search(pattern, code):
+            return f"❌ AEGIS GUVENLIK IHLALI: '{pattern}' kullanimi tespit edildi ve engellendi. Bu komut guvenlik politikalari geregi yasaktir."
+
+    # WORKSPACE IZOLASYONU
+    session_id = 'local_user'
+    workspace_dir = os.path.join(os.getcwd(), 'workspaces', str(session_id))
+    os.makedirs(workspace_dir, exist_ok=True)
+    
+    old_cwd = os.getcwd()
     old_stdout = sys.stdout
     redirected_output = sys.stdout = io.StringIO()
     
     try:
-        # Create an isolated global dictionary
+        os.chdir(workspace_dir)
         global_env = {}
         exec(code, global_env)
         output = redirected_output.getvalue()
@@ -172,6 +191,7 @@ def execute_python_code(code: str) -> str:
     except Exception as e:
         return f"Kod calisirken Hata Olustu:\n{e}"
     finally:
+        os.chdir(old_cwd)
         sys.stdout = old_stdout
 
 tools = [execute_python_code, wikipedia, internet_search, calculate, get_weather, read_webpage]
@@ -204,14 +224,14 @@ def index():
 @app.route("/api/upload", methods=["POST"])
 def upload_file():
     if 'file' not in request.files:
-        return jsonify({"error": "Dosya bulunamad?"}), 400
+        return jsonify({"error": "Dosya bulunamadi."}), 400
     
     file = request.files['file']
     session_id = request.form.get('session_id')
     user_id = session.get("user_id")
     
     if not file or file.filename == '':
-        return jsonify({"error": "Dosya se?ilmedi"}), 400
+        return jsonify({"error": "Dosya secilmedi"}), 400
 
     if not session_id:
         session_id = str(uuid.uuid4())
@@ -295,8 +315,6 @@ def register():
             from langchain_community.vectorstores import FAISS
             from langchain_google_genai import GoogleGenerativeAIEmbeddings
             import os
-            
-            embeddings_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
             facts = []
             if job_title:
                 facts.append(f"Kullanicinin meslegi/unvani: {job_title}")
@@ -380,7 +398,7 @@ def delete_chat(chat_id):
         
     chat = ChatSession.query.filter_by(id=chat_id, user_id=user_id).first()
     if not chat:
-        return jsonify({"error": "Sohbet bulunamad?."}), 404
+        return jsonify({"error": "Sohbet bulunamadi."}), 404
         
     # Delete associated messages
     ChatMessage.query.filter_by(session_id=chat_id).delete()
@@ -400,12 +418,12 @@ def rename_chat(chat_id):
         
     chat = ChatSession.query.filter_by(id=chat_id, user_id=user_id).first()
     if not chat:
-        return jsonify({"error": "Sohbet bulunamad?."}), 404
+        return jsonify({"error": "Sohbet bulunamadi."}), 404
         
     data = request.json
     new_title = data.get("title", "").strip()
     if not new_title:
-        return jsonify({"error": "Ge?erli bir isim girmelisiniz."}), 400
+        return jsonify({"error": "Gecerli bir isim girmelisiniz."}), 400
         
     chat.title = new_title
     db.session.commit()
@@ -468,12 +486,12 @@ def run_task():
             resp = requests.get("https://api.groq.com/openai/v1/models", headers={"Authorization": f"Bearer {groq_key}"}, timeout=5)
             if resp.status_code == 200:
                 available_models = [m["id"] for m in resp.json().get("data", [])]
-                tool_models = ["llama-3.3-70b-versatile", "llama3-8b-8192", "llama3-70b-8192", "gemma2-9b-it"]
-                groq_model = next((m for m in tool_models if m in available_models), available_models[0] if available_models else "llama-3.3-70b-versatile")
+                tool_models = ["groq/compound", "qwen/qwen3.6-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+                groq_model = next((m for m in tool_models if m in available_models), "qwen/qwen3.6-27b")
             else:
-                groq_model = "llama-3.3-70b-versatile"
+                groq_model = "qwen/qwen3.6-27b"
         except Exception:
-            groq_model = "llama-3.3-70b-versatile"
+            groq_model = "qwen/qwen3.6-27b"
         groq_model_instance = ChatGroq(model=groq_model, temperature=0)
 
     # If user selected a specific model, check if key exists
@@ -495,7 +513,7 @@ def run_task():
     elif model_choice == "groq" and groq_model_instance: llms.append(groq_model_instance)
 
     # Add the rest as fallbacks
-    for m in [gemini_model, groq_model_instance, openai_model, anthropic_model]:
+    for m in [gemini_model, openai_model, anthropic_model]:
         if m and m not in llms:
             llms.append(m)
 
@@ -709,15 +727,15 @@ SADECE plandaki adimlara harfiyen uyarak araclari (tools) sirayla calistir ve go
                 
             elif selected_agent_name == "Polaris (Baş Mimar)":
                 yield f"data: {json.dumps({'type': 'action', 'content': '🌟 Polaris: Görev analiz ediliyor ve stratejik planı oluşturuluyor...'})}\n\n"
-                planıner_prompt = f"Sen Polaris'in planılama lobusun. Aşağıdaki görevi çöçözmek için adım adım numaralıı bir planı çıçıkar. KESİNLİKLE ARAÇÇ (TOOL) KULLANMA. Sadece metin olarak planıı yaz.\n\nGörev: {question}"
-                planı_content = llm_with_fallbacks.invoke(planıner_prompt).content
-                if isinstance(planı_content, list):
-                    planı_content = " ".join([c.get("text", "") for c in planı_content if isinstance(c, dict) and "text" in c])
+                planner_prompt = f"Sen Polaris'in planlama lobusun. Aşağıdaki görevi cozmek için adım adım numaralıı bir planı çıçıkar. KESİNLİKLE ARAÇÇ (TOOL) KULLANMA. Sadece metin olarak plani yaz.\n\nGörev: {question}"
+                plan_content = llm_with_fallbacks.invoke(planner_prompt).content
+                if isinstance(plan_content, list):
+                    plan_content = " ".join([c.get("text", "") for c in plan_content if isinstance(c, dict) and "text" in c])
                 
-                yield f"data: {json.dumps({'type': 'thought', 'content': f'Answer:\n[PLAN]\n{planı_content}'})}\n\n"
+                yield f"data: {json.dumps({'type': 'thought', 'content': f'Answer:\n[PLAN]\n{plan_content}'})}\n\n"
                 
                 from langchain_core.messages import AIMessage
-                current_messages.append(AIMessage(content=f"İşte oluşturduğum stratejik planı:\n{planı_content}\n\nŞimdi bu planıa sadık kalarak araçları sırayla kullanacağım."))
+                current_messages.append(AIMessage(content=f"İşte oluşturduğum stratejik planı:\n{plan_content}\n\nŞimdi bu plana sadık kalarak araçları sırayla kullanacağım."))
 
             revision_count = 0
             max_revisions = 1  # 1 ekstra revizyon
@@ -765,6 +783,9 @@ Eğer cevap tamamen doğru, güvenli, eksiksizse ve kullanıcının isteğini ta
 Eğer eksik, kodda bariz bir hata, güvenlik açığı veya yetersiz açıklama varsa "[RED]" yaz ve hemen yanına nedenini ve eksikleri listele. (Örn: [RED] Kodda x değişkeni tanımsız, ayrıca yorum satırı eksik.)"""
                 
                 reviewer_response = llm_with_fallbacks.invoke(reviewer_prompt).content
+                
+                if isinstance(reviewer_response, list):
+                    reviewer_response = " ".join([c.get("text", "") for c in reviewer_response if isinstance(c, dict) and "text" in c])
                 
                 if "[KABUL]" in reviewer_response.upper() or revision_count >= max_revisions:
                     if revision_count >= max_revisions and "[KABUL]" not in reviewer_response.upper():
@@ -815,7 +836,8 @@ Eğer eksik, kodda bariz bir hata, güvenlik açığı veya yetersiz açıklama 
                     pass
             yield f"data: {json.dumps({'type': 'error', 'content': f'Sistem Hatasi: {str(e)}'})}\n\n"
 
-    return Response(generate(), mimetype="text/event-stream")
+    from flask import stream_with_context
+    return Response(stream_with_context(generate()), mimetype="text/event-stream")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=5001, debug=False, use_reloader=False)

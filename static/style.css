@@ -1668,3 +1668,52 @@ body.light-theme .log-title {
     background: rgba(149, 29, 209, 0.15);
     color: var(--accent);
 }
+
+
+/* CUSTOM SCROLLBAR */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+    opacity: 0.5;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #c084fc;
+}
+
+/* MESSAGE ANIMATION */
+@keyframes messageSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.message {
+    animation: messageSlideUp 0.3s ease-out forwards;
+}
+
+/* BRANDING BADGES */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+.badge:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.2);
+}
