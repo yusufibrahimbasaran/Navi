@@ -39,7 +39,9 @@ Sistemde aktif olarak çalışan 7 farklı departman bulunmaktadır:
 4.  **Orion (Yazılım Uzmanı):** Çalışma alanında (Workspace) izole olarak Python kodu yazan, çalıştıran mühendis.
 5.  **Vega (Matematik Uzmanı):** LLM'lerin matematikte halüsinasyon görmesini engellemek için sembolik hesaplama ile deterministik sonuçlar üreten analitik ajan.
 6.  **Lyra (Metin Yazarı):** Editoryal içeriklerde uzmanlaşmış ajan.
-7.  **Münazara Odası (Debate):** Araştırmacı ile Yazılımcı ajanların birbiriyle tartıştığı, Baş Mimar'ın sentez yaptığı çoklu-ajan beyin fırtınası komitesi.
+7.  **Nova (Genel Asistan):** Genel konularda yardımcı olan asistan.
+8.  **Rigel (Veri / Görsel Analist):** (Yakında) Yeni nesil RAG asistanı.
+9.  **Münazara Odası (Debate):** Araştırmacı ile Yazılımcı ajanların birbiriyle tartıştığı, Baş Mimar'ın sentez yaptığı çoklu-ajan beyin fırtınası komitesi.
 
 ---
 

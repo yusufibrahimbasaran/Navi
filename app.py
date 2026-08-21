@@ -23,7 +23,7 @@ set_llm_cache(SQLiteCache(database_path="langchain_cache.db"))
 
 app = Flask(__name__)
 import os
-app.secret_key = os.urandom(24)
+app.secret_key = os.getenv('FLASK_SECRET_KEY', os.urandom(24))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///navi.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -164,7 +164,7 @@ def execute_python_code(code: str) -> str:
     
     # AEGIS: GUVENLIK KALKANI (REGEX)
     dangerous_patterns = [
-        r"os\.system", r"os\.popen", r"subprocess", r"shutil\.rmtree",
+        r"os\.system", r"os\.popen", r"subprocess", r"shutil\.rmtree", r"__import__", r"os\.remove", r"os\.unlink", r"os\.rmdir", r"open\s*\(",
         r"rm\s+-rf", r"sys\.exit", r"eval\(", r"exec\("
     ]
     for pattern in dangerous_patterns:
@@ -172,7 +172,8 @@ def execute_python_code(code: str) -> str:
             return f"❌ AEGIS GUVENLIK IHLALI: '{pattern}' kullanimi tespit edildi ve engellendi. Bu komut guvenlik politikalari geregi yasaktir."
 
     # WORKSPACE IZOLASYONU
-    session_id = 'local_user'
+    import uuid
+    session_id = str(uuid.uuid4())
     workspace_dir = os.path.join(os.getcwd(), 'workspaces', str(session_id))
     os.makedirs(workspace_dir, exist_ok=True)
     
