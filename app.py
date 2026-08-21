@@ -149,7 +149,7 @@ def read_webpage(url: str) -> str:
 
 
 @tool
-def execute_python_code(code: str) -> str:
+def execute_python_code(code: str, config: RunnableConfig) -> str:
     """
     Python kodu calistirir ve konsol ciktisini (stdout) dondurur.
     Gorevleri coezmek veya veri analizi yapmak icin bu araci kullanin.
@@ -164,7 +164,7 @@ def execute_python_code(code: str) -> str:
     
     # AEGIS: GUVENLIK KALKANI (REGEX)
     dangerous_patterns = [
-        r"os\.system", r"os\.popen", r"subprocess", r"shutil\.rmtree", r"__import__", r"os\.remove", r"os\.unlink", r"os\.rmdir", r"open\s*\(",
+        r"os\.system", r"os\.popen", r"subprocess", r"shutil\.rmtree", r"__import__", r"os\.remove", r"os\.unlink", r"os\.rmdir",
         r"rm\s+-rf", r"sys\.exit", r"eval\(", r"exec\("
     ]
     for pattern in dangerous_patterns:
@@ -172,8 +172,7 @@ def execute_python_code(code: str) -> str:
             return f"❌ AEGIS GUVENLIK IHLALI: '{pattern}' kullanimi tespit edildi ve engellendi. Bu komut guvenlik politikalari geregi yasaktir."
 
     # WORKSPACE IZOLASYONU
-    import uuid
-    session_id = str(uuid.uuid4())
+    session_id = config.get('configurable', {}).get('session_id', 'local_user')
     workspace_dir = os.path.join(os.getcwd(), 'workspaces', str(session_id))
     os.makedirs(workspace_dir, exist_ok=True)
     
@@ -224,6 +223,8 @@ def index():
 
 @app.route("/api/upload", methods=["POST"])
 def upload_file():
+    return jsonify({"error": "Dosya yukleme su an Navi 3.1 surumunde devre disidir."}), 503
+
     if 'file' not in request.files:
         return jsonify({"error": "Dosya bulunamadi."}), 400
     
@@ -745,7 +746,7 @@ SADECE plandaki adimlara harfiyen uyarak araclari (tools) sirayla calistir ve go
                 worker_output = ""
                 
                 # UZMAN AJAN (Worker) DEVREDE
-                for chunk in agent_executor.stream({"messages": current_messages}, stream_mode="updates"):
+                for chunk in agent_executor.stream({"messages": current_messages}, config={"configurable": {"session_id": chat_session_id}}, stream_mode="updates"):
                     if "agent" in chunk:
                         ai_msg = chunk["agent"]["messages"][-1]
                         if ai_msg.tool_calls:
