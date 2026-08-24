@@ -122,9 +122,9 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
         }
         const answerBox = document.createElement('div');
         try {
-            answerBox.innerHTML = marked.parse(text);
+            answerBox.innerHTML = DOMPurify.sanitize(marked.parse(text));
         } catch (e) {
-            answerBox.innerHTML = text.replace(/\n/g, '<br>');
+            answerBox.innerHTML = DOMPurify.sanitize(text.replace(/\n/g, '<br>'));
         }
         currentAgentMessageDiv.appendChild(answerBox);
         addCopyButtons();
@@ -171,7 +171,7 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
         taskInput.disabled = true;
         
         const userContent = createMessageWrapper('user');
-        userContent.innerHTML = `<p>${question}</p>`;
+        userContent.innerHTML = DOMPurify.sanitize(`<p>${question}</p>`);
         
         currentAgentMessageDiv = null;
 
@@ -212,11 +212,11 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
                 // Ayrıca ana sohbet ekranında göster ki kullanıcı takıldığını düşünmesin
                 
                 if (typeof msgDiv !== 'undefined') {
-                    msgDiv.innerHTML = `<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`;
+                    msgDiv.innerHTML = DOMPurify.sanitize(`<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`);
                 } else {
                     const errorDiv = document.createElement("div");
                     errorDiv.className = "message system-message";
-                    errorDiv.innerHTML = `<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`;
+                    errorDiv.innerHTML = DOMPurify.sanitize(`<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`);
                     chatBox.appendChild(errorDiv);
                 }
                 resetUI();
@@ -506,12 +506,12 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
         msgs.forEach(m => {
             const contentDiv = createMessageWrapper(m.role);
             if(m.role === 'user') {
-                contentDiv.innerHTML = `<p>${m.content}</p>`;
+                contentDiv.innerHTML = DOMPurify.sanitize(`<p>${m.content}</p>`);
             } else {
                 try {
-                    contentDiv.innerHTML = marked.parse(m.content);
+                    contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(m.content));
                 } catch (e) {
-                    contentDiv.innerHTML = m.content.replace(/\n/g, '<br>');
+                    contentDiv.innerHTML = DOMPurify.sanitize(m.content.replace(/\n/g, '<br>'));
                 }
             }
         });
