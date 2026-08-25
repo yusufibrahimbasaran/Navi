@@ -708,11 +708,43 @@ document.addEventListener("DOMContentLoaded", () => {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
+    function getDynamicGreetingText() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return "Günaydın! Ben Navi 🧭";
+        if (hour >= 12 && hour < 18) return "İyi Günler! Ben Navi 🧭";
+        if (hour >= 18 && hour < 23) return "İyi Akşamlar! Ben Navi 🧭";
+        return "İyi Geceler! Ben Navi 🧭";
+    }
+
+    function getWelcomeScreenHTML() {
+        return `<div class="welcome-screen" id="welcome-screen">
+            <div class="welcome-hero-badge">
+                <span class="badge-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> Navi 3.5</span>
+                <span class="badge-separator">•</span>
+                <span class="badge-status"><span class="status-dot-active"></span> 8 Uzman Ajan & Münazara Aktif</span>
+            </div>
+            <div class="welcome-icon-box">
+                <div class="welcome-icon-aura"></div>
+                <i class="fa-solid fa-circle-nodes"></i>
+            </div>
+            <h1 class="welcome-title gradient-text" id="welcome-dynamic-greeting">${getDynamicGreetingText()}</h1>
+            <p class="welcome-subtitle">Fikirlerinizi, kodlarınızı ve stratejilerinizi gerçeğe dönüştüren yeni nesil çoklu-ajan stüdyosu.<br>Bugün hangi projeyi hayata geçiriyoruz?</p>
+            <div class="prompt-suggestions">
+                <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Python ile yılan oyunu yaz</button>
+                <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Kara delikler nasıl oluşur?</button>
+                <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">1'den 100'e kadar asal sayıları bul</button>
+            </div>
+        </div>`;
+    }
+
+    const initialGreeting = document.getElementById('welcome-dynamic-greeting');
+    if (initialGreeting) initialGreeting.textContent = getDynamicGreetingText();
+
     clearBtn.addEventListener('click', () => {
         conversationHistory = [];
         currentSessionId = null;
         currentAgentState = null;
-        chatBox.innerHTML = `<div class="welcome-screen" id="welcome-screen"> <div class="welcome-icon-box pulse-animation"> <i class="fa-solid fa-circle-nodes"></i> </div> <h1 class="gradient-text">Merhaba, Ben Navi!</h1> <p>Fikirlerinizi gerçeğe dönüştürmek için tasarlanmış kişisel yapay zeka asistanınızım.<br>Aşağıdaki örneklerden biriyle başlayabilirsiniz:</p> <div class="prompt-suggestions"> <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Python ile yılan oyunu yaz</button> <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Kara delikler nasıl oluşur?</button> <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">1'den 100'e kadar asal sayıları bul</button> </div> </div>`;
+        chatBox.innerHTML = getWelcomeScreenHTML();
     });
 
     runBtn.addEventListener('click', async () => {

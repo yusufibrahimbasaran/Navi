@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Navi | Yeni Nesil Yapay Zeka</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=62">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=65">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
@@ -89,11 +89,19 @@
 
             <div class="chat-container" id="chat-box">
                 <div class="welcome-screen" id="welcome-screen">
-                    <div class="welcome-icon-box pulse-animation">
+                    <div class="welcome-hero-badge">
+                        <span class="badge-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> Navi 3.5</span>
+                        <span class="badge-separator">•</span>
+                        <span class="badge-status"><span class="status-dot-active"></span> 8 Uzman Ajan & Münazara Aktif</span>
+                    </div>
+
+                    <div class="welcome-icon-box">
+                        <div class="welcome-icon-aura"></div>
                         <i class="fa-solid fa-circle-nodes"></i>
                     </div>
-                    <h1 class="gradient-text">Merhaba, Ben Navi!</h1>
-                    <p>Fikirlerinizi gerçeğe dönüştürmek için tasarlanmış kişisel yapay zeka asistanınızım.<br>Aşağıdaki örneklerden biriyle başlayabilirsiniz:</p>
+
+                    <h1 class="welcome-title gradient-text" id="welcome-dynamic-greeting">Merhaba, Ben Navi!</h1>
+                    <p class="welcome-subtitle">Fikirlerinizi, kodlarınızı ve stratejilerinizi gerçeğe dönüştüren yeni nesil çoklu-ajan stüdyosu.<br>Bugün hangi projeyi hayata geçiriyoruz?</p>
                     
                     <div class="prompt-suggestions">
                         <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Python ile yılan oyunu yaz</button>
@@ -465,6 +473,6 @@
             </script>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='app.js') }}?v=85"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=88"></script>
 </body>
 </html>
