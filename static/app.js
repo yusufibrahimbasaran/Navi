@@ -424,7 +424,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // --- CODE BLOCK UTILITIES (PREVIEW, FULLSCREEN, COPY) ---
+    // --- CODE BLOCK UTILITIES (UNIFIED SANDBOX PREVIEW, FULLSCREEN, COPY) ---
     window.toggleCodePreview = function(btn) {
         const wrapper = btn.closest('.code-block-wrapper');
         if (!wrapper) return;
@@ -448,90 +448,95 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const isShowing = (previewPane.style.display === 'block');
         if (!isShowing) {
-            // Switch to live preview
-            const codeLines = Array.from(pre.querySelectorAll('.line-content')).map(l => l.innerText).join('\n');
-            const code = (codeLines && codeLines.trim()) ? codeLines : (pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText);
-            const lang = (wrapper.getAttribute('data-lang') || 'html').toLowerCase();
+            // Find parent message container to gather sibling code blocks (Unified Sandbox)
+            const parentMsg = wrapper.closest('.final-answer-container, .step-body, .message-content, .message-wrapper') || document.body;
+            const siblingWrappers = parentMsg.querySelectorAll('.code-block-wrapper');
             
+            let combinedHTML = '';
+            let combinedCSS = '';
+            let combinedJS = '';
+            
+            const extractCodeFromWrapper = (w) => {
+                const p = w.querySelector('pre');
+                if (!p) return '';
+                const lines = Array.from(p.querySelectorAll('.line-content')).map(l => l.innerText).join('\n');
+                return (lines && lines.trim()) ? lines : (p.querySelector('code') ? p.querySelector('code').innerText : p.innerText);
+            };
+
+            siblingWrappers.forEach(sib => {
+                const sibLang = (sib.getAttribute('data-lang') || '').toLowerCase();
+                const sibCode = extractCodeFromWrapper(sib);
+                if (!sibCode.trim()) return;
+
+                if (sibLang === 'html' || sibLang === 'htm' || sibLang === 'svg' || sibLang === 'xml') {
+                    combinedHTML += '\n' + sibCode;
+                } else if (sibLang === 'css') {
+                    combinedCSS += '\n' + sibCode;
+                } else if (sibLang === 'javascript' || sibLang === 'js') {
+                    combinedJS += '\n' + sibCode;
+                } else if (sibCode.includes('<!DOCTYPE') || sibCode.includes('<html') || sibCode.includes('<div') || sibCode.includes('<button') || sibCode.includes('<style') || sibCode.includes('<svg')) {
+                    combinedHTML += '\n' + sibCode;
+                }
+            });
+
+            // If current block wasn't assigned (e.g. standalone block)
+            const currentCode = extractCodeFromWrapper(wrapper);
+            const currentLang = (wrapper.getAttribute('data-lang') || 'html').toLowerCase();
+            
+            if (currentLang === 'css' && !combinedCSS) combinedCSS = currentCode;
+            if ((currentLang === 'javascript' || currentLang === 'js') && !combinedJS) combinedJS = currentCode;
+            if ((currentLang === 'html' || currentLang === 'htm') && !combinedHTML) combinedHTML = currentCode;
+            
+            if (!combinedHTML && !combinedCSS && !combinedJS) {
+                combinedHTML = currentCode;
+            }
+
             let htmlContent = '';
-            if (lang === 'html' || lang === 'htm' || lang === 'svg' || lang === 'xml' || code.includes('<div') || code.includes('<html') || code.includes('<button') || code.includes('<svg') || code.includes('<style')) {
-                htmlContent = `<!DOCTYPE html>
+            if (combinedHTML || combinedCSS || combinedJS) {
+                // If the HTML already contains <!DOCTYPE html> or <html>, embed CSS and JS into it
+                if (combinedHTML.includes('<html') || combinedHTML.includes('<!DOCTYPE')) {
+                    htmlContent = combinedHTML;
+                    if (combinedCSS && !htmlContent.includes(combinedCSS)) {
+                        htmlContent = htmlContent.replace('</head>', `<style>\n${combinedCSS}\n</style></head>`);
+                        if (!htmlContent.includes(combinedCSS)) {
+                            htmlContent = `<style>\n${combinedCSS}\n</style>` + htmlContent;
+                        }
+                    }
+                    if (combinedJS && !htmlContent.includes(combinedJS)) {
+                        htmlContent = htmlContent.replace('</body>', `<script>\ntry {\n${combinedJS}\n} catch(e) { console.error('JS Hatası:', e); }\n<\/script></body>`);
+                        if (!htmlContent.includes(combinedJS)) {
+                            htmlContent += `<script>\ntry {\n${combinedJS}\n} catch(e) { console.error('JS Hatası:', e); }\n<\/script>`;
+                        }
+                    }
+                } else {
+                    // Assemble full clean template
+                    htmlContent = `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; }
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #ffffff; color: #1e293b; min-height: 100vh; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; background: #ffffff; color: #1e293b; min-height: 100vh; }
+        ${combinedCSS}
     </style>
 </head>
 <body>
-    ${code}
-</body>
-</html>`;
-            } else if (lang === 'javascript' || lang === 'js') {
-                htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: monospace; padding: 16px; background: #1e1e2e; color: #cdd6f4; margin: 0; font-size: 13px; line-height: 1.6; }
-        .log-entry { margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; }
-        .log-error { color: #f38ba8; }
-        .log-info { color: #89b4fa; }
-    </style>
-</head>
-<body>
-    <div style="font-weight:bold; color:#a6e3a1; margin-bottom:10px;">⚡ JS Konsol Çıktısı:</div>
-    <div id="console-output"></div>
+    ${combinedHTML || '<div class="preview-root"></div>'}
     <script>
-        const out = document.getElementById('console-output');
-        const append = (msg, cls) => {
-            const d = document.createElement('div');
-            d.className = 'log-entry ' + (cls || '');
-            d.textContent = msg;
-            out.appendChild(d);
-        };
-        console.log = (...args) => append(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
-        console.error = (...args) => append(args.join(' '), 'log-error');
-        console.info = (...args) => append(args.join(' '), 'log-info');
-        window.onerror = (msg, url, line) => append('Hata: ' + msg + ' (Satır: ' + line + ')', 'log-error');
         try {
-            ${code}
-        } catch(e) {
-            append('Çalışma Hatası: ' + e.message, 'log-error');
+            ${combinedJS}
+        } catch(err) {
+            console.error('Çalışma Hatası:', err);
         }
     <\/script>
 </body>
 </html>`;
-            } else if (lang === 'css') {
-                htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; padding: 30px; display: flex; align-items: center; justify-content: center; min-height: 80vh; background: #f8fafc; margin: 0; }
-        .demo-container { padding: 24px 32px; background: #ffffff; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
-        ${code}
-    </style>
-</head>
-<body>
-    <div class="demo-container">
-        <h3>🎨 CSS Önizleme Alanı</h3>
-        <p>CSS kurallarınız bu alana uygulanmıştır.</p>
-        <button class="btn btn-primary">Örnek Buton</button>
-    </div>
-</body>
-</html>`;
+                }
             } else {
-                htmlContent = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><style>body{font-family:monospace;padding:16px;background:#1e1e2e;color:#cdd6f4;}</style></head>
-<body><pre>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre></body>
-</html>`;
+                htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:monospace;padding:16px;background:#1e1e2e;color:#cdd6f4;}</style></head><body><pre>${currentCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre></body></html>`;
             }
 
             try {
