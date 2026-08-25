@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Navi | Yeni Nesil Yapay Zeka</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=52">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=54">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body class="dark-theme">
     <div class="app-container">
@@ -71,6 +74,14 @@
                     <span class="mobile-logo mobile-only"><i class="fa-solid fa-circle-nodes"></i> Navi</span>
                 </div>
                 <div class="header-right auth-header-actions">
+                    <div class="export-dropdown-wrapper">
+                        <button id="export-chat-btn" class="header-auth-btn export-btn" title="Sohbeti Dışa Aktar"><i class="fa-solid fa-file-export"></i> Dışa Aktar</button>
+                        <div id="export-menu-dropdown" class="export-menu-dropdown">
+                            <button class="export-menu-item" onclick="exportChat('md')"><i class="fa-brands fa-markdown"></i> Markdown (.md)</button>
+                            <button class="export-menu-item" onclick="exportChat('json')"><i class="fa-solid fa-code"></i> JSON Formatı</button>
+                            <button class="export-menu-item" onclick="exportChat('pdf')"><i class="fa-solid fa-file-pdf"></i> PDF (Yazdır)</button>
+                        </div>
+                    </div>
                     <button id="login-modal-btn" class="header-auth-btn login-btn"><i class="fa-solid fa-user-astronaut"></i> Giriş Yap</button>
                     <button id="register-header-btn" class="header-auth-btn register-btn"><i class="fa-solid fa-user-plus"></i> Kayıt Ol</button>
                 </div>
@@ -454,6 +465,6 @@
             </script>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='app.js') }}?v=72"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=75"></script>
 </body>
 </html>

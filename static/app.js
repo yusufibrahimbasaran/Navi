@@ -23,23 +23,39 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentSessionId = null;
     let selectedImageBase64 = null;
 
-    // --- MARKED.JS CONFIGURATION (SYNTAX HIGHLIGHTING) ---
+    // --- MARKED.JS CONFIGURATION (ADVANCED SYNTAX HIGHLIGHTING & LIVE PREVIEW) ---
     const renderer = new marked.Renderer();
     renderer.code = function(code, language) {
         if (!code) code = "";
+        const langLower = (language || '').toLowerCase().trim();
         const validLanguage = (language && hljs.getLanguage(language)) ? language : 'plaintext';
         let highlighted = code;
         try {
             highlighted = hljs.highlight(code, { language: validLanguage }).value;
-        } catch(e) {}
-        return `<div class="code-block-wrapper">
+        } catch(e) {
+            highlighted = code;
+        }
+
+        const lines = highlighted.split('\n');
+        // If last line is empty from trailing newline, don't show empty extra number
+        if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
+        const numberedLines = lines.map((l, i) => `<span class="code-line"><span class="line-num">${i + 1}</span><span class="line-content">${l || ' '}</span></span>`).join('\n');
+
+        const isPreviewable = ['html', 'htm', 'svg', 'xml', 'javascript', 'js', 'css'].includes(langLower);
+
+        return `<div class="code-block-wrapper" data-lang="${langLower}">
                   <div class="code-header">
-                      <span class="code-lang">${validLanguage}</span>
-                      <button class="copy-code-btn" onclick="copyToClipboard(this)">
-                          <i class="fa-regular fa-copy"></i> Kopyala
-                      </button>
+                      <div class="code-header-left">
+                          <span class="code-lang-badge"><i class="fa-solid fa-code"></i> ${validLanguage}</span>
+                      </div>
+                      <div class="code-header-right">
+                          ${isPreviewable ? `<button class="code-header-btn preview-btn" onclick="toggleCodePreview(this)" title="Canlı Önizleme"><i class="fa-solid fa-play"></i> Önizle</button>` : ''}
+                          <button class="code-header-btn fullscreen-btn" onclick="toggleCodeFullscreen(this)" title="Tam Ekran"><i class="fa-solid fa-expand"></i></button>
+                          <button class="code-header-btn copy-btn" onclick="copyCode(this)" title="Kodu Kopyala"><i class="fa-regular fa-copy"></i> Kopyala</button>
+                      </div>
                   </div>
-                  <pre><code class="hljs ${validLanguage}">${highlighted}</code></pre>
+                  <pre><code class="hljs ${validLanguage}">${numberedLines}</code></pre>
+                  ${isPreviewable ? `<div class="code-preview-pane" style="display: none;"><iframe class="code-preview-frame" sandbox="allow-scripts"></iframe></div>` : ''}
                 </div>`;
     };
     marked.setOptions({ renderer: renderer });
@@ -243,6 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch(e) {
                 cardBody.innerHTML = DOMPurify.sanitize(content.replace(/\n/g, '<br>'));
             }
+            renderKaTeX(cardBody);
         }
         
         currentAgentState.stepCount++;
@@ -250,6 +267,22 @@ document.addEventListener("DOMContentLoaded", () => {
             currentAgentState.stepsCounter.textContent = `${currentAgentState.stepCount} adım`;
         }
         scrollToBottom();
+    }
+
+    function renderKaTeX(element) {
+        if (typeof renderMathInElement !== 'undefined' && element) {
+            try {
+                renderMathInElement(element, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true}
+                    ],
+                    throwOnError: false
+                });
+            } catch(e) {}
+        }
     }
 
     function addStreamStep(type, text) {
@@ -345,6 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         currentAgentState.stepsList.appendChild(stepEl);
+        renderKaTeX(stepEl);
         scrollToBottom();
     }
 
@@ -358,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             currentAgentState.finalAnswerContainer.innerHTML = DOMPurify.sanitize(text.replace(/\n/g, '<br>'));
         }
-        addCopyButtons();
+        renderKaTeX(currentAgentState.finalAnswerContainer);
         scrollToBottom();
     }
 
@@ -390,22 +424,155 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-// Function to add copy buttons to code blocks
-    function addCopyButtons() {
-        document.querySelectorAll('pre').forEach((preBlock) => {
-            if (preBlock.querySelector('.copy-code-btn')) return; // Already added
-            const btn = document.createElement('button');
-            btn.className = 'copy-code-btn';
-            btn.innerHTML = '<i class="fa-regular fa-copy"></i> Kopyala';
-            btn.onclick = () => {
-                const code = preBlock.querySelector('code');
-                const text = code ? code.innerText : preBlock.innerText.replace('Kopyala', '').trim();
-                navigator.clipboard.writeText(text).then(() => {
-                    btn.innerHTML = '<i class="fa-solid fa-check"></i> Kopyalandı';
-                    setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> Kopyala'; }, 2000);
-                });
+    // --- CODE BLOCK UTILITIES (PREVIEW, FULLSCREEN, COPY) ---
+    window.toggleCodePreview = function(btn) {
+        const wrapper = btn.closest('.code-block-wrapper');
+        if (!wrapper) return;
+        const pre = wrapper.querySelector('pre');
+        const previewPane = wrapper.querySelector('.code-preview-pane');
+        const iframe = wrapper.querySelector('.code-preview-frame');
+        
+        if (!previewPane || !iframe) return;
+        
+        const isHidden = (previewPane.style.display === 'none' || !previewPane.style.display);
+        if (isHidden) {
+            // Switch to live preview
+            const codeLines = Array.from(pre.querySelectorAll('.line-content')).map(l => l.innerText).join('\n');
+            const code = codeLines || pre.querySelector('code').innerText;
+            const lang = (wrapper.getAttribute('data-lang') || 'html').toLowerCase();
+            
+            let htmlContent = code;
+            if (lang === 'javascript' || lang === 'js') {
+                htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:16px;background:#1e1e2e;color:#cdd6f4;margin:0;}#console-out{font-family:monospace;font-size:13px;line-height:1.6;white-space:pre-wrap;}</style></head><body><div id="console-out"></div><script>const _out=document.getElementById('console-out');console.log=(...args)=>{_out.innerHTML+=args.map(a=>typeof a==='object'?JSON.stringify(a,null,2):a).join(' ')+'<br>'};try{${code}}catch(err){_out.innerHTML+='<span style="color:#f38ba8">Hata: '+err.message+'</span>'}<\/script></body></html>`;
+            } else if (lang === 'css') {
+                htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${code}</style></head><body style="padding:20px;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:80vh;"><div class="demo-box" style="padding:20px;border-radius:12px;background:#fff;color:#333;box-shadow:0 10px 30px rgba(0,0,0,0.1);">CSS Canlı Önizleme Alanı</div></body></html>`;
+            }
+            
+            iframe.srcdoc = htmlContent;
+            pre.style.display = 'none';
+            previewPane.style.display = 'block';
+            btn.innerHTML = '<i class="fa-solid fa-code"></i> Kod';
+            btn.classList.add('active');
+        } else {
+            // Switch back to code
+            pre.style.display = 'block';
+            previewPane.style.display = 'none';
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> Önizle';
+            btn.classList.remove('active');
+        }
+    };
+
+    window.toggleCodeFullscreen = function(btn) {
+        const wrapper = btn.closest('.code-block-wrapper');
+        if (!wrapper) return;
+        wrapper.classList.toggle('code-fullscreen-active');
+        const icon = btn.querySelector('i');
+        if (wrapper.classList.contains('code-fullscreen-active')) {
+            if (icon) icon.className = 'fa-solid fa-compress';
+            btn.title = 'Tam Ekrandan Çık';
+        } else {
+            if (icon) icon.className = 'fa-solid fa-expand';
+            btn.title = 'Tam Ekran';
+        }
+    };
+
+    window.copyCode = function(btn) {
+        const wrapper = btn.closest('.code-block-wrapper');
+        if (!wrapper) return;
+        const codeLines = Array.from(wrapper.querySelectorAll('.line-content')).map(l => l.innerText).join('\n');
+        const text = codeLines || wrapper.querySelector('pre code').innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check" style="color:#10b981;"></i> Kopyalandı';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    };
+
+    // --- CHAT EXPORT FUNCTIONALITY ---
+    window.exportChat = function(format) {
+        const dropdown = document.getElementById('export-menu-dropdown');
+        if (dropdown) dropdown.classList.remove('show');
+
+        const messageWrappers = document.querySelectorAll('.message-wrapper');
+        const messages = [];
+
+        messageWrappers.forEach(msg => {
+            const isUser = msg.querySelector('.avatar.user') !== null;
+            const role = isUser ? 'Kullanıcı' : 'Navi';
+            
+            let text = '';
+            if (isUser) {
+                const p = msg.querySelector('.message-content p');
+                text = p ? p.innerText : (msg.querySelector('.message-content') ? msg.querySelector('.message-content').innerText : '');
+            } else {
+                const finalAns = msg.querySelector('.final-answer-container');
+                if (finalAns && finalAns.innerText.trim()) {
+                    text = finalAns.innerText;
+                } else {
+                    const content = msg.querySelector('.message-content');
+                    text = content ? content.innerText : '';
+                }
+            }
+            if (text.trim()) {
+                messages.push({ role, content: text.trim(), time: new Date().toLocaleTimeString() });
+            }
+        });
+
+        if (messages.length === 0) {
+            alert('Dışa aktarılacak sohbet mesajı bulunamadı.');
+            return;
+        }
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+
+        if (format === 'md') {
+            let md = `# Navi Sohbet Kaydı\n**Tarih:** ${new Date().toLocaleString()}\n\n---\n\n`;
+            messages.forEach(m => {
+                const header = m.role === 'Kullanıcı' ? '### 👤 Kullanıcı' : '### 🧭 Navi (Yapay Zeka Asistanı)';
+                md += `${header}\n\n${m.content}\n\n---\n\n`;
+            });
+            downloadFile(`navi-sohbet-${dateStr}.md`, 'text/markdown;charset=utf-8', md);
+        } else if (format === 'json') {
+            const dataObj = {
+                title: "Navi Sohbet Arşivi",
+                exportDate: new Date().toISOString(),
+                totalMessages: messages.length,
+                messages: messages
             };
-            preBlock.appendChild(btn);
+            downloadFile(`navi-sohbet-${dateStr}.json`, 'application/json;charset=utf-8', JSON.stringify(dataObj, null, 2));
+        } else if (format === 'pdf') {
+            window.print();
+        }
+    };
+
+    function downloadFile(filename, type, data) {
+        const blob = new Blob([data], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }
+
+    // Export dropdown toggle listener
+    const exportBtn = document.getElementById('export-chat-btn');
+    const exportDropdown = document.getElementById('export-menu-dropdown');
+    if (exportBtn && exportDropdown) {
+        exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            exportDropdown.classList.toggle('show');
+        });
+        document.addEventListener('click', () => {
+            exportDropdown.classList.remove('show');
         });
     }
 

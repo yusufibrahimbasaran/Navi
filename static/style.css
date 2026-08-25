@@ -650,6 +650,295 @@ body.light-theme .debate-card {
     margin-bottom: 0;
 }
 
+/* ================= PACKAGE C: ADVANCED CODE BLOCKS, LIVE PREVIEW & EXPORT ================= */
+
+/* --- ADVANCED CODE BLOCK STYLES --- */
+.code-block-wrapper {
+    position: relative;
+    background: #1e1e2e;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    margin: 14px 0;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.light-theme .code-block-wrapper {
+    background: #f8fafc;
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.light-theme .code-header {
+    background: rgba(0, 0, 0, 0.04);
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.code-lang-badge {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.code-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.code-header-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.code-header-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.code-header-btn.preview-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.code-header-btn.copy-btn.copied {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #10b981;
+}
+
+.code-block-wrapper pre {
+    margin: 0;
+    padding: 14px 0;
+    overflow-x: auto;
+    font-family: 'Fira Code', monospace, Consolas;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.code-block-wrapper code {
+    display: block;
+    padding: 0;
+    background: transparent;
+    font-family: inherit;
+}
+
+.code-line {
+    display: flex;
+    padding: 0 14px;
+    min-height: 21px;
+}
+
+.code-line:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.line-num {
+    user-select: none;
+    width: 32px;
+    text-align: right;
+    padding-right: 14px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 11.5px;
+    flex-shrink: 0;
+}
+
+body.light-theme .line-num {
+    color: rgba(0, 0, 0, 0.35);
+}
+
+.line-content {
+    flex-grow: 1;
+    white-space: pre;
+}
+
+/* LIVE PREVIEW PANE */
+.code-preview-pane {
+    background: #ffffff;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    height: 320px;
+    width: 100%;
+}
+
+.code-preview-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #ffffff;
+}
+
+/* FULLSCREEN CODE BLOCK */
+.code-block-wrapper.code-fullscreen-active {
+    position: fixed !important;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    z-index: 9999;
+    margin: 0;
+    border-radius: 16px;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+}
+
+.code-block-wrapper.code-fullscreen-active pre {
+    flex-grow: 1;
+    height: calc(100% - 50px);
+}
+
+.code-block-wrapper.code-fullscreen-active .code-preview-pane {
+    flex-grow: 1;
+    height: calc(100% - 50px);
+}
+
+/* --- EXPORT CHAT DROPDOWN & BUTTONS --- */
+.export-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.export-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.25s ease;
+}
+
+.export-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.export-menu-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: rgba(20, 20, 35, 0.95);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 6px;
+    min-width: 160px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    flex-direction: column;
+    gap: 3px;
+    animation: fadeInArena 0.2s ease;
+}
+
+body.light-theme .export-menu-dropdown {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.export-menu-dropdown.show {
+    display: flex;
+}
+
+.export-menu-item {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.export-menu-item:hover {
+    background: rgba(149, 29, 209, 0.15);
+    color: var(--accent);
+}
+
+/* --- KATEX MATHEMATICS FORMULAS --- */
+.katex-display {
+    margin: 12px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px 0;
+}
+
+.katex {
+    font-size: 1.08em;
+}
+
+/* --- PRINT MEDIA (PDF EXPORT CLEAN VIEW) --- */
+@media print {
+    .sidebar, .resizer, .main-header, .input-container, .export-dropdown-wrapper,
+    .thought-accordion, .message-actions, .prompt-suggestions, .mobile-backdrop {
+        display: none !important;
+    }
+    
+    body, .main-content, .chat-container {
+        background: #ffffff !important;
+        color: #000000 !important;
+        overflow: visible !important;
+        height: auto !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .message-wrapper {
+        border-bottom: 1px solid #e2e8f0 !important;
+        padding: 16px 0 !important;
+        page-break-inside: avoid;
+    }
+    
+    .final-answer-container, .message-content {
+        color: #1a202c !important;
+    }
+    
+    .code-block-wrapper {
+        border: 1px solid #cbd5e1 !important;
+        background: #f8fafc !important;
+    }
+}
+
 /* LOG BUBBLES (Legacy) */
 .log-box {
     background: rgba(255, 255, 255, 0.08);
