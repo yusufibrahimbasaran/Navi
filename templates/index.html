@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Navi | Yeni Nesil Yapay Zeka</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=72">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=120">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
@@ -21,7 +21,7 @@
         <div id="mobile-backdrop" class="mobile-backdrop"></div>
         
         <!-- SIDEBAR -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="app-sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fa-solid fa-circle-nodes ai-icon"></i>
@@ -30,6 +30,9 @@
                 <div class="header-actions">
                     <button id="theme-toggle" class="icon-btn" title="Temayı Değiştir">
                         <i class="fa-solid fa-moon"></i>
+                    </button>
+                    <button id="sidebar-collapse-btn" class="icon-btn" title="Kenar Çubuğunu Daralt" onclick="toggleSidebar()">
+                        <i class="fa-solid fa-chevron-left"></i>
                     </button>
                 </div>
             </div>
@@ -40,12 +43,20 @@
                 </button>
                 
                 <div class="chat-history-container">
-                    <h3 class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> Geçmiş Sohbetler</h3>
-                    <ul class="chat-history-list">
-                        <li class="history-item" style="opacity: 0.5; cursor: default; justify-content: center; padding: 16px 14px; font-size: 13px; font-style: italic; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed var(--border-color);">
-                            <i class="fa-solid fa-lock" style="margin-right: 5px;"></i> Geçmiş için giriş yapın
-                        </li>
-                    </ul>
+                    <div class="history-header-row">
+                        <h3 class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> Geçmiş</h3>
+                    </div>
+                    <div class="history-search-box" id="history-search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="history-search-input" placeholder="Sohbetlerde ara...">
+                    </div>
+                    <div class="chat-history-list-wrapper">
+                        <ul class="chat-history-list" id="chat-history-list">
+                            <li class="history-item" style="opacity: 0.5; cursor: default; justify-content: center; padding: 16px 14px; font-size: 13px; font-style: italic; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed var(--border-color);">
+                                <i class="fa-solid fa-lock" style="margin-right: 5px;"></i> Geçmiş için giriş yapın
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
@@ -64,13 +75,17 @@
 
         <!-- MAIN CHAT AREA -->
         <main class="main-content">
+            <!-- AMBIENT GLOW ORBS (BACKGROUND) -->
+            <div class="ambient-glow-orb ambient-glow-top"></div>
+            <div class="ambient-glow-orb ambient-glow-bottom"></div>
+
             <!-- TOP HEADER (Desktop & Mobile) -->
             <header class="main-header">
                 <div class="header-left">
-                    <button id="sidebar-toggle" class="icon-btn" title="Menüyü Daralt/Genişlet">
+                    <button id="sidebar-toggle" class="icon-btn" title="Menüyü Genişlet" onclick="toggleSidebar()">
                         <i class="fa-solid fa-bars"></i>
                     </button>
-                    <!-- Sadece mobilde g?r?nen ikon -->
+                    <!-- Sadece mobilde görünen ikon -->
                     <span class="mobile-logo mobile-only"><i class="fa-solid fa-circle-nodes"></i> Navi</span>
                 </div>
                 <div class="header-right auth-header-actions">
@@ -89,35 +104,113 @@
 
             <div class="chat-container" id="chat-box">
                 <div class="welcome-screen" id="welcome-screen">
-                    <div class="welcome-icon-minimal">
-                        <i class="fa-solid fa-compass"></i>
+                    <div class="welcome-hero-badge">
+                        <span class="badge-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> Navi 3.6</span>
+                        <span class="badge-separator">•</span>
+                        <span class="badge-status"><span class="status-dot-active"></span> 8 Uzman Ajan & Münazara Aktif</span>
                     </div>
 
-                    <h1 class="welcome-title gradient-text" id="welcome-dynamic-greeting">Bugün ne üzerine çalışıyoruz?</h1>
-                    <p class="welcome-subtitle">Yazılım, münazara, matematik ve strateji için tasarlanmış çoklu-ajan asistanınız.</p>
+                    <div class="welcome-icon-box">
+                        <div class="welcome-icon-aura"></div>
+                        <i class="fa-solid fa-circle-nodes"></i>
+                    </div>
+
+                    <h1 class="welcome-title gradient-text" id="welcome-dynamic-greeting">Merhaba, Ben Navi!</h1>
+                    <p class="welcome-subtitle">Fikirlerinizi, kodlarınızı ve stratejilerinizi gerçeğe dönüştüren yeni nesil çoklu-ajan stüdyosu.<br>Bugün hangi projeyi hayata geçiriyoruz?</p>
                     
-                    <div class="welcome-quick-pills">
-                        <button class="quick-pill" onclick="setPrompt('HTML, CSS ve JavaScript kullanarak canlı çalışan şık bir interaktif sayaç kartı kodla')">
-                            <i class="fa-solid fa-code"></i>
-                            <span>Web Bileşeni Kodla</span>
-                        </button>
-                        <button class="quick-pill" onclick="setPrompt('PostgreSQL mi MongoDB mi daha avantajlı, Sirius ve Orion ile münazara yapın')">
-                            <i class="fa-solid fa-scale-balanced"></i>
-                            <span>Ajanlar Arası Münazara</span>
-                        </button>
-                        <button class="quick-pill" onclick="setPrompt('Kuantum fiziğindeki Schrödinger dalga denklemini KaTeX formülleriyle açıkla')">
-                            <i class="fa-solid fa-square-root-variable"></i>
-                            <span>KaTeX ile Matematik</span>
-                        </button>
-                        <button class="quick-pill" onclick="setPrompt('2026 yılındaki otonom yapay zeka ajan trendleri hakkında derin araştırma yap ve özetle')">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                            <span>Derin Araştırma Yap</span>
-                        </button>
+                    <!-- AGENTS SHOWCASE STRIP (DYNAMIC FILTER) -->
+                    <div class="welcome-agents-strip">
+                        <div class="agent-pill active" data-agent="all" onclick="filterAgentPrompts('all', this)">
+                            <span class="pill-dot" style="background: #a855f7; box-shadow: 0 0 6px #a855f7;"></span>
+                            <span class="pill-name">Tümü</span>
+                            <small>Öne Çıkan</small>
+                        </div>
+                        <div class="agent-pill sirius" data-agent="sirius" onclick="filterAgentPrompts('sirius', this)">
+                            <span class="pill-dot sirius"></span>
+                            <span class="pill-name">Sirius</span>
+                            <small>Araştırma</small>
+                        </div>
+                        <div class="agent-pill orion" data-agent="orion" onclick="filterAgentPrompts('orion', this)">
+                            <span class="pill-dot orion"></span>
+                            <span class="pill-name">Orion</span>
+                            <small>Yazılım</small>
+                        </div>
+                        <div class="agent-pill debate" data-agent="debate" onclick="filterAgentPrompts('debate', this)">
+                            <span class="pill-dot debate"></span>
+                            <span class="pill-name">Münazara</span>
+                            <small>Arena</small>
+                        </div>
+                        <div class="agent-pill vega" data-agent="vega" onclick="filterAgentPrompts('vega', this)">
+                            <span class="pill-dot vega"></span>
+                            <span class="pill-name">Vega</span>
+                            <small>Matematik</small>
+                        </div>
+                        <div class="agent-pill polaris" data-agent="polaris" onclick="filterAgentPrompts('polaris', this)">
+                            <span class="pill-dot polaris"></span>
+                            <span class="pill-name">Polaris</span>
+                            <small>Baş Mimar</small>
+                        </div>
+                    </div>
+
+                    <!-- BENTO GRID PROMPT CARDS (WITH SPOTLIGHT) -->
+                    <div class="bento-grid" id="bento-grid-cards">
+                        <div class="bento-card" onclick="setPrompt('HTML, CSS ve JavaScript kullanarak canlı çalışan şık bir interaktif sayaç kartı kodla')">
+                            <div class="bento-icon orion"><i class="fa-solid fa-code"></i></div>
+                            <div class="bento-content">
+                                <h4>Canlı Web Bileşeni Kodla</h4>
+                                <p>Canlı Sandbox önizlemeli modern bir HTML/CSS kartı tasarla</p>
+                            </div>
+                            <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                        </div>
+
+                        <div class="bento-card" onclick="setPrompt('Monolitik mimari mi Mikroservis mimarisi mi, Sirius ve Orion ile münazara yapın')">
+                            <div class="bento-icon debate"><i class="fa-solid fa-scale-balanced"></i></div>
+                            <div class="bento-content">
+                                <h4>Ajanlar Arası Münazara</h4>
+                                <p>Sirius ve Orion'un tez ve antitezle çarpıştığı VS arenası</p>
+                            </div>
+                            <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                        </div>
+
+                        <div class="bento-card" onclick="setPrompt('Euler özdeşliğini ve karmaşık sayıların geometrisini KaTeX denklemleriyle açıkla')">
+                            <div class="bento-icon vega"><i class="fa-solid fa-square-root-variable"></i></div>
+                            <div class="bento-content">
+                                <h4>KaTeX ile Matematik & Bilim</h4>
+                                <p>Sembolik hesaplama ve yüksek çözünürlüklü formüller</p>
+                            </div>
+                            <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                        </div>
+
+                        <div class="bento-card" onclick="setPrompt('Otonom AI ajanlarının 2026 yılındaki sektör etkileri hakkında kapsamlı bir araştırma raporu hazırla')">
+                            <div class="bento-icon sirius"><i class="fa-solid fa-brain"></i></div>
+                            <div class="bento-content">
+                                <h4>Derin Araştırma & Strateji</h4>
+                                <p>Web taraması, sentez ve uygulanabilir yol haritası</p>
+                            </div>
+                            <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="input-container">
+            <div class="input-container" id="input-container-zone">
+                <!-- DRAG & DROP OVERLAY -->
+                <div class="drag-drop-overlay" id="drag-drop-overlay" style="display: none;">
+                    <div class="drag-drop-box">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Görseli Buraya Bırakın</span>
+                    </div>
+                </div>
+
+                <!-- QUICK MENTION & SLASH COMMAND DROPDOWN -->
+                <div class="quick-mention-dropdown" id="quick-mention-dropdown" style="display: none;">
+                    <div class="quick-mention-header" id="quick-mention-header">
+                        <span><i class="fa-solid fa-wand-magic-sparkles"></i> Hızlı Seçim</span>
+                        <small>↑↓ Gezin, Enter Seç</small>
+                    </div>
+                    <div class="quick-mention-list" id="quick-mention-list"></div>
+                </div>
+
                 <!-- Image Preview Container -->
                 <div id="image-preview-container" style="display: none; padding: 10px; padding-bottom: 0;">
                     <div style="position: relative; display: inline-block;">
@@ -479,6 +572,6 @@
             </script>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='app.js') }}?v=95"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=155"></script>
 </body>
 </html>

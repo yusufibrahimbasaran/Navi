@@ -708,45 +708,180 @@ document.addEventListener("DOMContentLoaded", () => {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
+    function getDynamicGreetingText() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return "Günaydın! Ben Navi";
+        if (hour >= 12 && hour < 18) return "İyi Günler! Ben Navi";
+        if (hour >= 18 && hour < 23) return "İyi Akşamlar! Ben Navi";
+        return "İyi Geceler! Ben Navi";
+    }
+
     window.setPrompt = function(text) {
         if (!taskInput) return;
         taskInput.value = text;
         taskInput.focus();
     };
 
-    function getDynamicGreetingText() {
-        const hour = new Date().getHours();
-        if (hour >= 5 && hour < 12) return "Günaydın! Bugün ne üzerine çalışıyoruz?";
-        if (hour >= 12 && hour < 18) return "İyi Günler! Bugün ne üzerine çalışıyoruz?";
-        if (hour >= 18 && hour < 23) return "İyi Akşamlar! Bugün ne üzerine çalışıyoruz?";
-        return "İyi Geceler! Bugün ne üzerine çalışıyoruz?";
-    }
+    // --- AGENT SPOTLIGHT & DYNAMIC PROMPTS HUB ---
+    const AGENT_PROMPT_DATA = {
+        all: [
+            { icon: 'orion', iconClass: 'fa-solid fa-code', title: 'Canlı Web Bileşeni Kodla', desc: 'Canlı Sandbox önizlemeli modern bir HTML/CSS kartı tasarla', prompt: 'HTML, CSS ve JavaScript kullanarak canlı çalışan şık bir interaktif sayaç kartı kodla' },
+            { icon: 'debate', iconClass: 'fa-solid fa-scale-balanced', title: 'Ajanlar Arası Münazara', desc: 'Sirius ve Orion\'un tez ve antitezle çarpıştığı VS arenası', prompt: 'Monolitik mimari mi Mikroservis mimarisi mi, Sirius ve Orion ile münazara yapın' },
+            { icon: 'vega', iconClass: 'fa-solid fa-square-root-variable', title: 'KaTeX ile Matematik & Bilim', desc: 'Sembolik hesaplama ve yüksek çözünürlüklü formüller', prompt: 'Euler özdeşliğini ve karmaşık sayıların geometrisini KaTeX denklemleriyle açıkla' },
+            { icon: 'sirius', iconClass: 'fa-solid fa-brain', title: 'Derin Araştırma & Strateji', desc: 'Web taraması, sentez ve uygulanabilir yol haritası', prompt: 'Otonom AI ajanlarının 2026 yılındaki sektör etkileri hakkında kapsamlı bir araştırma raporu hazırla' }
+        ],
+        sirius: [
+            { icon: 'sirius', iconClass: 'fa-solid fa-magnifying-glass', title: '2026 AI Pazar Analizi', desc: 'Web\'den en güncel pazar trendlerini araştırıp raporla', prompt: '2026 yapay zeka pazarındaki en son trendleri web araştırması yaparak kapsamlı bir rapor halinde sun' },
+            { icon: 'sirius', iconClass: 'fa-solid fa-newspaper', title: 'Haftalık Teknoloji Özeti', desc: 'Yapay zeka ve açık kaynak dünyasındaki son haberler', prompt: 'Bu hafta yapay zeka dünyasında öne çıkan en kritik 5 gelişmeyi özetle' },
+            { icon: 'sirius', iconClass: 'fa-solid fa-chart-line', title: 'Rakip & Çözüm Karşılaştırması', desc: 'Popüler LLM sağlayıcılarının avantajlarını listele', prompt: 'Gemini 2.0, Claude 3.5 ve GPT-4o modellerinin güçlü ve zayıf yönlerini karşılaştırmalı analiz et' },
+            { icon: 'sirius', iconClass: 'fa-solid fa-book-open', title: 'Akademik Literatür Taraması', desc: 'Attention Is All You Need makalesini analiz et', prompt: 'Transformer mimarisi ve Self-Attention mekanizmasının matematiksel temellerini akademik dille açıkla' }
+        ],
+        orion: [
+            { icon: 'orion', iconClass: 'fa-solid fa-laptop-code', title: 'İnteraktif Web UI Kartı', desc: 'HTML/CSS/JS ile buton efektli modern widget', prompt: 'HTML, CSS ve JavaScript kullanarak canlı çalışan şık bir interaktif sayaç kartı kodla' },
+            { icon: 'orion', iconClass: 'fa-brands fa-python', title: 'Python ile Veri Analizi', desc: 'Pandas ve NumPy kullanarak veri işleme fonksiyonu', prompt: 'Python kullanarak bir CSV veri setini okuyup aykırı değerleri filtreleyen ve özet istatistik çıkaran temiz bir script yaz' },
+            { icon: 'orion', iconClass: 'fa-solid fa-database', title: 'REST API & SQL Şeması', desc: 'Kullanıcı ve sipariş tabloları için ilişkisel şema', prompt: 'Bir e-ticaret uygulaması için PostgreSQL veritabanı şeması ve Express.js REST API rotalarını tasarla' },
+            { icon: 'orion', iconClass: 'fa-solid fa-bolt', title: 'Algoritma Optimizasyonu', desc: 'O(N^2) karmaşıklığını O(N log N)\'e düşür', prompt: 'İki dizideki ortak elemanları en verimli (Time Complexity) şekilde bulan JavaScript algoritmasını yaz' }
+        ],
+        debate: [
+            { icon: 'debate', iconClass: 'fa-solid fa-scale-balanced', title: 'Monolitik vs Mikroservis', desc: 'Sirius ve Orion ile mimari seçim münazarası', prompt: 'Monolitik mimari mi Mikroservis mimarisi mi, Sirius ve Orion ile münazara yapın' },
+            { icon: 'debate', iconClass: 'fa-solid fa-server', title: 'PostgreSQL vs MongoDB', desc: 'İlişkisel SQL ve NoSQL veritabanı çatışması', prompt: 'PostgreSQL mi MongoDB mi daha avantajlı, Sirius ve Orion ile münazara yapın' },
+            { icon: 'debate', iconClass: 'fa-solid fa-mobile-screen', title: 'Flutter vs React Native', desc: 'Çapraz platform mobil geliştirme münazarası', prompt: 'Mobil uygulama geliştirmede Flutter mı React Native mi, Sirius ve Orion ile münazara yapın' },
+            { icon: 'debate', iconClass: 'fa-solid fa-shield-halved', title: 'Açık Kaynak vs Kapalı AI', desc: 'Yapay zeka modellerinin geleceği ve güvenlik', prompt: 'Yapay zekanın geleceğinde Açık Kaynak modeller mi Kapalı API modelleri mi kazanacak, münazara başlat' }
+        ],
+        vega: [
+            { icon: 'vega', iconClass: 'fa-solid fa-square-root-variable', title: 'Schrödinger Dalga Denklemi', desc: 'Kuantum olasılık yoğunluğunu KaTeX ile modelle', prompt: 'Kuantum fiziğindeki Schrödinger dalga denklemini KaTeX formülleriyle adım adım açıkla' },
+            { icon: 'vega', iconClass: 'fa-solid fa-infinity', title: 'Euler Özdeşliği İspatı', desc: 'e^(i*pi) + 1 = 0 formülünün analizi', prompt: 'Euler özdeşliğini ve karmaşık sayıların geometrisini KaTeX denklemleriyle açıkla' },
+            { icon: 'vega', iconClass: 'fa-solid fa-chart-pie', title: 'Bayes Teoremi ve Olasılık', desc: 'Koşullu olasılık formülünü ve kullanımını açıkla', prompt: 'Bayes Teoremi formülünü KaTeX ile yazarak makine öğrenmesindeki kullanımını bir örnekle anlat' },
+            { icon: 'vega', iconClass: 'fa-solid fa-atom', title: 'Özel Görelilik & Lorentz', desc: 'Zaman genişlemesi ve kütle-enerji eşdeğerliği', prompt: 'Einstein\'ın Özel Görelilik teorisini ve Lorentz dönüşümlerini KaTeX formülleriyle açıkla' }
+        ],
+        polaris: [
+            { icon: 'polaris', iconClass: 'fa-solid fa-network-wired', title: 'Yüksek Trafikli Mimari', desc: '10 Milyon kullanıcı için ölçeklenebilir sistem', prompt: 'Büyük ölçekli bir e-ticaret mikroservis mimarisi planı ve stratejisi oluştur' },
+            { icon: 'polaris', iconClass: 'fa-solid fa-road', title: 'SaaS Ürün Yol Haritası', desc: 'MVP\'den kurumsal ölçeğe 12 aylık plan', prompt: 'B2B bir SaaS ürünü geliştirmek için 4 çeyreklik (Q1-Q4) teknik ve stratejik yol haritası çıkar' },
+            { icon: 'polaris', iconClass: 'fa-solid fa-user-shield', title: 'Zero Trust Güvenlik', desc: 'Kurumsal veri güvenliği ve kimlik doğrulama', prompt: 'Bir bulut altyapısı için Sıfır Güven (Zero Trust) mimarisinin bileşenlerini ve stratejisini hazırla' },
+            { icon: 'polaris', iconClass: 'fa-solid fa-arrows-spin', title: 'CI/CD & DevOps Pipeline', desc: 'Otomatik test, derleme ve sıfır kesinti yayını', prompt: 'Kubernetes ve GitHub Actions kullanarak sıfır kesintili (Zero-downtime) bir CI/CD pipeline tasarımı hazırla' }
+        ]
+    };
+
+    window.filterAgentPrompts = function(agentKey, pillEl) {
+        const strip = pillEl ? pillEl.closest('.welcome-agents-strip') : document.querySelector('.welcome-agents-strip');
+        if (strip) {
+            strip.querySelectorAll('.agent-pill').forEach(p => p.classList.remove('active'));
+            if (pillEl) pillEl.classList.add('active');
+        }
+
+        const container = document.getElementById('bento-grid-cards');
+        if (!container) return;
+
+        const items = AGENT_PROMPT_DATA[agentKey] || AGENT_PROMPT_DATA.all;
+        container.innerHTML = items.map(item => `
+            <div class="bento-card" onclick="setPrompt('${item.prompt.replace(/'/g, "\\'")}')">
+                <div class="bento-icon ${item.icon}"><i class="${item.iconClass}"></i></div>
+                <div class="bento-content">
+                    <h4>${item.title}</h4>
+                    <p>${item.desc}</p>
+                </div>
+                <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+            </div>
+        `).join('');
+    };
+
+    // Spotlight mouse move listener
+    document.addEventListener('mousemove', (e) => {
+        const cards = document.querySelectorAll('.bento-card');
+        cards.forEach(card => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            card.style.setProperty('--mouse-x', `${x}px`);
+            card.style.setProperty('--mouse-y', `${y}px`);
+        });
+    });
 
     function getWelcomeScreenHTML() {
         return `<div class="welcome-screen" id="welcome-screen">
-            <div class="welcome-icon-minimal">
-                <i class="fa-solid fa-compass"></i>
+            <div class="welcome-hero-badge">
+                <span class="badge-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> Navi 3.6</span>
+                <span class="badge-separator">•</span>
+                <span class="badge-status"><span class="status-dot-active"></span> 8 Uzman Ajan & Münazara Aktif</span>
+            </div>
+            <div class="welcome-icon-box">
+                <div class="welcome-icon-aura"></div>
+                <i class="fa-solid fa-circle-nodes"></i>
             </div>
             <h1 class="welcome-title gradient-text" id="welcome-dynamic-greeting">${getDynamicGreetingText()}</h1>
-            <p class="welcome-subtitle">Yazılım, münazara, matematik ve strateji için tasarlanmış çoklu-ajan asistanınız.</p>
+            <p class="welcome-subtitle">Fikirlerinizi, kodlarınızı ve stratejilerinizi gerçeğe dönüştüren yeni nesil çoklu-ajan stüdyosu.<br>Bugün hangi projeyi hayata geçiriyoruz?</p>
             
-            <div class="welcome-quick-pills">
-                <button class="quick-pill" onclick="setPrompt('HTML, CSS ve JavaScript kullanarak canlı çalışan şık bir interaktif sayaç kartı kodla')">
-                    <i class="fa-solid fa-code"></i>
-                    <span>Web Bileşeni Kodla</span>
-                </button>
-                <button class="quick-pill" onclick="setPrompt('PostgreSQL mi MongoDB mi daha avantajlı, Sirius ve Orion ile münazara yapın')">
-                    <i class="fa-solid fa-scale-balanced"></i>
-                    <span>Ajanlar Arası Münazara</span>
-                </button>
-                <button class="quick-pill" onclick="setPrompt('Kuantum fiziğindeki Schrödinger dalga denklemini KaTeX formülleriyle açıkla')">
-                    <i class="fa-solid fa-square-root-variable"></i>
-                    <span>KaTeX ile Matematik</span>
-                </button>
-                <button class="quick-pill" onclick="setPrompt('2026 yılındaki otonom yapay zeka ajan trendleri hakkında derin araştırma yap ve özetle')">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <span>Derin Araştırma Yap</span>
-                </button>
+            <!-- AGENTS SHOWCASE STRIP (DYNAMIC FILTER) -->
+            <div class="welcome-agents-strip">
+                <div class="agent-pill active" data-agent="all" onclick="filterAgentPrompts('all', this)">
+                    <span class="pill-dot" style="background: #a855f7; box-shadow: 0 0 6px #a855f7;"></span>
+                    <span class="pill-name">Tümü</span>
+                    <small>Öne Çıkan</small>
+                </div>
+                <div class="agent-pill sirius" data-agent="sirius" onclick="filterAgentPrompts('sirius', this)">
+                    <span class="pill-dot sirius"></span>
+                    <span class="pill-name">Sirius</span>
+                    <small>Araştırma</small>
+                </div>
+                <div class="agent-pill orion" data-agent="orion" onclick="filterAgentPrompts('orion', this)">
+                    <span class="pill-dot orion"></span>
+                    <span class="pill-name">Orion</span>
+                    <small>Yazılım</small>
+                </div>
+                <div class="agent-pill debate" data-agent="debate" onclick="filterAgentPrompts('debate', this)">
+                    <span class="pill-dot debate"></span>
+                    <span class="pill-name">Münazara</span>
+                    <small>Arena</small>
+                </div>
+                <div class="agent-pill vega" data-agent="vega" onclick="filterAgentPrompts('vega', this)">
+                    <span class="pill-dot vega"></span>
+                    <span class="pill-name">Vega</span>
+                    <small>Matematik</small>
+                </div>
+                <div class="agent-pill polaris" data-agent="polaris" onclick="filterAgentPrompts('polaris', this)">
+                    <span class="pill-dot polaris"></span>
+                    <span class="pill-name">Polaris</span>
+                    <small>Baş Mimar</small>
+                </div>
+            </div>
+
+            <!-- BENTO GRID PROMPT CARDS (WITH SPOTLIGHT) -->
+            <div class="bento-grid" id="bento-grid-cards">
+                <div class="bento-card" onclick="setPrompt('HTML, CSS ve JavaScript kullanarak canlı çalışan şık bir interaktif sayaç kartı kodla')">
+                    <div class="bento-icon orion"><i class="fa-solid fa-code"></i></div>
+                    <div class="bento-content">
+                        <h4>Canlı Web Bileşeni Kodla</h4>
+                        <p>Canlı Sandbox önizlemeli modern bir HTML/CSS kartı tasarla</p>
+                    </div>
+                    <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+
+                <div class="bento-card" onclick="setPrompt('Monolitik mimari mi Mikroservis mimarisi mi, Sirius ve Orion ile münazara yapın')">
+                    <div class="bento-icon debate"><i class="fa-solid fa-scale-balanced"></i></div>
+                    <div class="bento-content">
+                        <h4>Ajanlar Arası Münazara</h4>
+                        <p>Sirius ve Orion'un tez ve antitezle çarpıştığı VS arenası</p>
+                    </div>
+                    <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+
+                <div class="bento-card" onclick="setPrompt('Euler özdeşliğini ve karmaşık sayıların geometrisini KaTeX denklemleriyle açıkla')">
+                    <div class="bento-icon vega"><i class="fa-solid fa-square-root-variable"></i></div>
+                    <div class="bento-content">
+                        <h4>KaTeX ile Matematik & Bilim</h4>
+                        <p>Sembolik hesaplama ve yüksek çözünürlüklü formüller</p>
+                    </div>
+                    <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+
+                <div class="bento-card" onclick="setPrompt('Otonom AI ajanlarının 2026 yılındaki sektör etkileri hakkında kapsamlı bir araştırma raporu hazırla')">
+                    <div class="bento-icon sirius"><i class="fa-solid fa-brain"></i></div>
+                    <div class="bento-content">
+                        <h4>Derin Araştırma & Strateji</h4>
+                        <p>Web taraması, sentez ve uygulanabilir yol haritası</p>
+                    </div>
+                    <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                </div>
             </div>
         </div>`;
     }
@@ -894,6 +1029,200 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // --- QUICK MENTION & SLASH COMMAND AUTOCOMPLETE ---
+    const mentionDropdown = document.getElementById('quick-mention-dropdown');
+    const mentionList = document.getElementById('quick-mention-list');
+    const mentionHeader = document.getElementById('quick-mention-header');
+    let mentionSelectedIndex = 0;
+    let currentMentionItems = [];
+
+    const QUICK_AGENTS = [
+        { prefix: '@', name: 'Sirius', tag: '@Sirius: ', icon: 'sirius', iconClass: 'fa-solid fa-magnifying-glass', desc: 'Web & Derin Araştırma Uzmanı' },
+        { prefix: '@', name: 'Orion', tag: '@Orion: ', icon: 'orion', iconClass: 'fa-solid fa-code', desc: 'Yazılım, Kod Geliştirme & Canlı Sandbox' },
+        { prefix: '@', name: 'Münazara', tag: '@Münazara: ', icon: 'debate', iconClass: 'fa-solid fa-scale-balanced', desc: 'Sirius vs Orion Fikir Çarpışması & Sentez' },
+        { prefix: '@', name: 'Vega', tag: '@Vega: ', icon: 'vega', iconClass: 'fa-solid fa-square-root-variable', desc: 'Matematik, Fizik & KaTeX Formülleri' },
+        { prefix: '@', name: 'Polaris', tag: '@Polaris: ', icon: 'polaris', iconClass: 'fa-solid fa-network-wired', desc: 'Baş Mimari, Strateji & Sistem Tasarımı' },
+        { prefix: '@', name: 'Lyra', tag: '@Lyra: ', icon: 'sirius', iconClass: 'fa-solid fa-pen-nib', desc: 'Yaratıcı Metin & Rapor Yazarlığı' }
+    ];
+
+    const QUICK_SLASH = [
+        { prefix: '/', name: '/kod', tag: 'HTML, CSS ve JavaScript kullanarak canlı çalışan şık bir interaktif sayaç kartı kodla', icon: 'orion', iconClass: 'fa-solid fa-laptop-code', desc: 'Canlı Sandbox önizlemeli bileşen kodla' },
+        { prefix: '/', name: '/munazara', tag: 'Monolitik mimari mi Mikroservis mimarisi mi, Sirius ve Orion ile münazara yapın', icon: 'debate', iconClass: 'fa-solid fa-scale-balanced', desc: 'İki zıt fikri Sirius ve Orion ile çarpıştır' },
+        { prefix: '/', name: '/matematik', tag: 'Kuantum fiziğindeki Schrödinger dalga denklemini KaTeX formülleriyle adım adım açıkla', icon: 'vega', iconClass: 'fa-solid fa-square-root-variable', desc: 'KaTeX formülleriyle adım adım analiz et' },
+        { prefix: '/', name: '/ara', tag: '2026 yılındaki otonom yapay zeka ajan trendleri hakkında derin araştırma yap ve özetle', icon: 'sirius', iconClass: 'fa-solid fa-globe', desc: 'Web\'den güncel verileri araştır ve özetle' },
+        { prefix: '/', name: '/temizle', action: 'clear', icon: 'polaris', iconClass: 'fa-solid fa-broom', desc: 'Sohbeti sıfırla ve yeni oturum başlat' }
+    ];
+
+    function checkQuickMentionTrigger() {
+        if (!taskInput || !mentionDropdown || !mentionList) return;
+        const val = taskInput.value;
+        const lastWord = val.split(/\s+/).pop();
+
+        if (lastWord.startsWith('@')) {
+            const query = lastWord.slice(1).toLowerCase();
+            currentMentionItems = QUICK_AGENTS.filter(a => a.name.toLowerCase().includes(query));
+            mentionHeader.innerHTML = `<span><i class="fa-solid fa-at"></i> Ajan Seçin</span><small>↑↓ Gezin, Enter Seç</small>`;
+            renderMentionList();
+        } else if (lastWord.startsWith('/')) {
+            const query = lastWord.slice(1).toLowerCase();
+            currentMentionItems = QUICK_SLASH.filter(s => s.name.toLowerCase().includes(query));
+            mentionHeader.innerHTML = `<span><i class="fa-solid fa-terminal"></i> Hızlı Komutlar</span><small>↑↓ Gezin, Enter Seç</small>`;
+            renderMentionList();
+        } else {
+            closeMentionDropdown();
+        }
+    }
+
+    function renderMentionList() {
+        if (!currentMentionItems || currentMentionItems.length === 0) {
+            closeMentionDropdown();
+            return;
+        }
+        mentionSelectedIndex = 0;
+        mentionList.innerHTML = currentMentionItems.map((item, idx) => `
+            <div class="quick-mention-item ${idx === 0 ? 'selected' : ''}" data-idx="${idx}">
+                <div class="quick-mention-item-icon ${item.icon}"><i class="${item.iconClass}"></i></div>
+                <div class="quick-mention-item-info">
+                    <div class="quick-mention-item-title">${item.name}</div>
+                    <div class="quick-mention-item-desc">${item.desc}</div>
+                </div>
+            </div>
+        `).join('');
+
+        mentionList.querySelectorAll('.quick-mention-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const idx = parseInt(el.getAttribute('data-idx'), 10);
+                selectMentionItem(idx);
+            });
+        });
+
+        mentionDropdown.style.display = 'block';
+    }
+
+    function closeMentionDropdown() {
+        if (mentionDropdown) mentionDropdown.style.display = 'none';
+        currentMentionItems = [];
+    }
+
+    function selectMentionItem(index) {
+        const item = currentMentionItems[index];
+        if (!item) return;
+
+        if (item.action === 'clear') {
+            clearBtn.click();
+            closeMentionDropdown();
+            return;
+        }
+
+        const val = taskInput.value;
+        const words = val.split(/\s+/);
+        words.pop(); // Remove the triggered @ or / token
+        const newPrefix = words.length > 0 ? words.join(' ') + ' ' : '';
+        taskInput.value = newPrefix + item.tag;
+        taskInput.focus();
+        closeMentionDropdown();
+
+        // Adjust height
+        taskInput.style.height = 'auto';
+        taskInput.style.height = Math.min(taskInput.scrollHeight, 160) + 'px';
+    }
+
+    // Auto-resize textarea & mention check on input
+    taskInput.addEventListener('input', () => {
+        taskInput.style.height = 'auto';
+        taskInput.style.height = Math.min(taskInput.scrollHeight, 160) + 'px';
+        checkQuickMentionTrigger();
+    });
+
+    // Keyboard navigation in mention dropdown & submit on Enter
+    taskInput.addEventListener('keydown', (e) => {
+        if (mentionDropdown && mentionDropdown.style.display === 'block') {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                mentionSelectedIndex = (mentionSelectedIndex + 1) % currentMentionItems.length;
+                updateMentionSelected();
+                return;
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                mentionSelectedIndex = (mentionSelectedIndex - 1 + currentMentionItems.length) % currentMentionItems.length;
+                updateMentionSelected();
+                return;
+            } else if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                selectMentionItem(mentionSelectedIndex);
+                return;
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeMentionDropdown();
+                return;
+            }
+        }
+
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            runBtn.click();
+        }
+    });
+
+    function updateMentionSelected() {
+        const items = mentionList.querySelectorAll('.quick-mention-item');
+        items.forEach((item, i) => {
+            item.classList.toggle('selected', i === mentionSelectedIndex);
+            if (i === mentionSelectedIndex) item.scrollIntoView({ block: 'nearest' });
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (mentionDropdown && !mentionDropdown.contains(e.target) && e.target !== taskInput) {
+            closeMentionDropdown();
+        }
+    });
+
+    // --- DRAG & DROP IMAGE ATTACHMENT ---
+    const dropZone = document.getElementById('input-container-zone');
+    const dropOverlay = document.getElementById('drag-drop-overlay');
+
+    if (dropZone && dropOverlay) {
+        let dragCounter = 0;
+        dropZone.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            dropOverlay.style.display = 'flex';
+        });
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter <= 0) {
+                dragCounter = 0;
+                dropOverlay.style.display = 'none';
+            }
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            dropOverlay.style.display = 'none';
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        selectedImageBase64 = ev.target.result;
+                        const preview = document.getElementById('image-preview');
+                        const previewCont = document.getElementById('image-preview-container');
+                        if (preview && previewCont) {
+                            preview.src = selectedImageBase64;
+                            previewCont.style.display = 'block';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+    }
+
     function resetUI() {
         activeAbortController = null;
         runBtn.disabled = false;
@@ -904,14 +1233,8 @@ document.addEventListener("DOMContentLoaded", () => {
         taskInput.value = ''; 
         taskInput.style.height = 'auto';
         taskInput.focus();
+        closeMentionDropdown();
     }
-    
-    taskInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            runBtn.click();
-        }
-    });
 
     if (loginModalBtn && authModal) {
         loginModalBtn.addEventListener("click", () => { authModal.classList.add("show"); tabBtns[0].click(); });
@@ -1011,17 +1334,65 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    let allUserChats = [];
+
     async function loadChatHistory() {
         const res = await fetch("/api/chats");
         if(!res.ok) return;
-        const chats = await res.json();
-        
+        allUserChats = await res.json();
+        renderChatHistoryList(allUserChats);
+    }
+
+    function renderChatHistoryList(chats) {
         const list = document.querySelector(".chat-history-list");
-        if(list) {
-            list.innerHTML = "";
-            chats.forEach(c => {
+        if (!list) return;
+        list.innerHTML = "";
+
+        if (!chats || chats.length === 0) {
+            list.innerHTML = `
+                <li class="history-item" style="opacity: 0.5; cursor: default; justify-content: center; padding: 14px 10px; font-size: 12px; font-style: italic; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px dashed var(--border-color);">
+                    <i class="fa-solid fa-folder-open" style="margin-right: 6px;"></i> Sohbet bulunamadı
+                </li>
+            `;
+            return;
+        }
+
+        // Group chats into Bugün, Dün, Önceki
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const groups = {
+            today: [],
+            yesterday: [],
+            older: []
+        };
+
+        chats.forEach(c => {
+            const chatDate = c.created_at ? new Date(c.created_at) : new Date();
+            chatDate.setHours(0, 0, 0, 0);
+
+            if (chatDate.getTime() === today.getTime()) {
+                groups.today.push(c);
+            } else if (chatDate.getTime() === yesterday.getTime()) {
+                groups.yesterday.push(c);
+            } else {
+                groups.older.push(c);
+            }
+        });
+
+        const renderGroup = (label, groupChats) => {
+            if (groupChats.length === 0) return;
+            const groupHeader = document.createElement("div");
+            groupHeader.className = "history-date-group";
+            groupHeader.textContent = label;
+            list.appendChild(groupHeader);
+
+            groupChats.forEach(c => {
                 const li = document.createElement("li");
                 li.className = "history-item";
+                if (currentSessionId === c.id) li.classList.add("active");
                 li.style.display = "flex";
                 li.style.justifyContent = "space-between";
                 li.style.alignItems = "center";
@@ -1055,9 +1426,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 li.onclick = (e) => {
                     if (e.target.closest('.delete-chat-btn') || e.target.closest('.edit-chat-btn')) {
-                        return; // handled below
+                        return;
                     }
                     loadChat(c.id);
+                    // On mobile, close sidebar
+                    if (window.innerWidth <= 768) {
+                        const sb = document.getElementById("app-sidebar") || document.querySelector(".sidebar");
+                        const bd = document.getElementById("mobile-backdrop");
+                        if (sb) sb.classList.remove("mobile-open");
+                        if (bd) bd.classList.remove("show");
+                    }
                 };
 
                 editBtn.onclick = async (e) => {
@@ -1090,7 +1468,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 list.appendChild(li);
             });
-        }
+        };
+
+        renderGroup("📅 Bugün", groups.today);
+        renderGroup("🕒 Dün", groups.yesterday);
+        renderGroup("📆 Önceki Sohbetler", groups.older);
+    }
+
+    // History live search input listener
+    const historySearchInput = document.getElementById("history-search-input");
+    if (historySearchInput) {
+        historySearchInput.addEventListener("input", (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            if (!query) {
+                renderChatHistoryList(allUserChats);
+            } else {
+                const filtered = allUserChats.filter(c => c.title.toLowerCase().includes(query));
+                renderChatHistoryList(filtered);
+            }
+        });
     }
 
     async function loadChat(id) {
@@ -1117,21 +1513,56 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         addCopyButtons();
         scrollToBottom();
+        renderChatHistoryList(allUserChats); // Update active state
     }
 
-    
     // Hide file pill on new chat
-    const originalClearBtnClick = clearBtn.onclick;
     clearBtn.addEventListener('click', () => {
         if (filePillContainer) filePillContainer.style.display = 'none';
+        if (allUserChats.length > 0) renderChatHistoryList(allUserChats);
     });
 
-    const resizer = document.getElementById("drag-handle");
-    const sidebar = document.querySelector(".sidebar");
-    
-    if (resizer && sidebar) {
+    // --- SIDEBAR COLLAPSE / EXPAND & MOBILE TOGGLE ---
+    const appSidebar = document.getElementById("app-sidebar") || document.querySelector(".sidebar");
+    const dragHandle = document.getElementById("drag-handle");
+    const sidebarToggleBtn = document.getElementById("sidebar-toggle");
+    const sidebarCollapseBtn = document.getElementById("sidebar-collapse-btn");
+    const mobileBackdrop = document.getElementById("mobile-backdrop");
+
+    function toggleSidebar() {
+        if (!appSidebar) return;
+        if (window.innerWidth <= 768) {
+            // Mobile overlay mode
+            const isOpen = appSidebar.classList.toggle("mobile-open");
+            if (mobileBackdrop) mobileBackdrop.classList.toggle("show", isOpen);
+        } else {
+            // Desktop collapse mode
+            const isCollapsed = appSidebar.classList.toggle("sidebar-collapsed");
+            if (dragHandle) dragHandle.classList.toggle("sidebar-collapsed", isCollapsed);
+            localStorage.setItem("navi_sidebar_collapsed", isCollapsed ? "1" : "0");
+        }
+    }
+
+    if (sidebarToggleBtn) sidebarToggleBtn.addEventListener("click", toggleSidebar);
+    if (sidebarCollapseBtn) sidebarCollapseBtn.addEventListener("click", toggleSidebar);
+    if (mobileBackdrop) {
+        mobileBackdrop.addEventListener("click", () => {
+            if (appSidebar) appSidebar.classList.remove("mobile-open");
+            mobileBackdrop.classList.remove("show");
+        });
+    }
+
+    // Restore desktop sidebar collapsed preference
+    if (window.innerWidth > 768 && localStorage.getItem("navi_sidebar_collapsed") === "1") {
+        if (appSidebar) appSidebar.classList.add("sidebar-collapsed");
+        if (dragHandle) dragHandle.classList.add("sidebar-collapsed");
+    }
+
+    // Resizer logic
+    if (dragHandle && appSidebar) {
         let isResizing = false;
-        resizer.addEventListener("mousedown", (e) => {
+        dragHandle.addEventListener("mousedown", (e) => {
+            if (appSidebar.classList.contains("sidebar-collapsed")) return;
             isResizing = true;
             document.body.style.cursor = "col-resize";
             e.preventDefault(); 
@@ -1141,7 +1572,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let newWidth = e.clientX;
             if (newWidth < 200) newWidth = 200;
             if (newWidth > 500) newWidth = 500;
-            sidebar.style.width = newWidth + "px";
+            appSidebar.style.width = newWidth + "px";
         });
         document.addEventListener("mouseup", () => {
             if (isResizing) {
@@ -1547,16 +1978,33 @@ function _doSpeak(text, onEndCallback) {
     window.speechSynthesis.speak(utterance);
 }
 
-// Sidebar Collapse Logic
-{
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle');
-    const mySidebarEl = document.querySelector('.sidebar');
-    if (sidebarToggleBtn && mySidebarEl) {
-        sidebarToggleBtn.addEventListener('click', () => {
-            mySidebarEl.classList.toggle('collapsed');
-        });
+// --- GLOBAL SIDEBAR TOGGLE & COLLAPSE ---
+window.toggleSidebar = function() {
+    const sb = document.getElementById("app-sidebar") || document.querySelector(".sidebar");
+    const dragHandle = document.getElementById("drag-handle");
+    const mobileBackdrop = document.getElementById("mobile-backdrop");
+
+    if (!sb) return;
+
+    if (window.innerWidth <= 768) {
+        const isOpen = sb.classList.toggle("mobile-open");
+        if (mobileBackdrop) mobileBackdrop.classList.toggle("show", isOpen);
+    } else {
+        const isCollapsed = sb.classList.toggle("sidebar-collapsed");
+        if (dragHandle) dragHandle.classList.toggle("sidebar-collapsed", isCollapsed);
+        localStorage.setItem("navi_sidebar_collapsed", isCollapsed ? "1" : "0");
     }
-}
+};
+
+// Restore desktop sidebar collapsed preference on DOM ready
+document.addEventListener("DOMContentLoaded", () => {
+    const sb = document.getElementById("app-sidebar") || document.querySelector(".sidebar");
+    const dragHandle = document.getElementById("drag-handle");
+    if (window.innerWidth > 768 && localStorage.getItem("navi_sidebar_collapsed") === "1") {
+        if (sb) sb.classList.add("sidebar-collapsed");
+        if (dragHandle) dragHandle.classList.add("sidebar-collapsed");
+    }
+});
 
 
 // --- SPEECH TO TEXT LOGIC (Microphone) ---
