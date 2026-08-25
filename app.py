@@ -224,66 +224,8 @@ def index():
 
 @app.route("/api/upload", methods=["POST"])
 def upload_file():
+    # RAG ve dosya yukleme ozelligi Navi 3.1 surumunde gecici olarak devre disi birakilmistir.
     return jsonify({"error": "Dosya yukleme su an Navi 3.1 surumunde devre disidir."}), 503
-
-    if 'file' not in request.files:
-        return jsonify({"error": "Dosya bulunamadi."}), 400
-    
-    file = request.files['file']
-    session_id = request.form.get('session_id')
-    user_id = session.get("user_id")
-    
-    if not file or file.filename == '':
-        return jsonify({"error": "Dosya secilmedi"}), 400
-
-    if not session_id:
-        session_id = str(uuid.uuid4())
-        # If logged in, create a chat session
-        if user_id:
-            title = file.filename[:30]
-            new_chat = ChatSession(id=session_id, user_id=user_id, title=title)
-            db.session.add(new_chat)
-            db.session.commit()
-
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(UPLOAD_FOLDER, f"{session_id}_{filename}")
-    file.save(filepath)
-    
-    text = ""
-    try:
-        if filename.lower().endswith(".pdf"):
-            doc = fitz.open(filepath)
-            for page in doc:
-                text += page.get_text()
-            doc.close()
-        else:
-            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                text = f.read()
-    except Exception as e:
-        return jsonify({"error": f"Dosya okuma hatas?: {str(e)}"}), 500
-
-    if not text.strip():
-        return jsonify({"error": "Belge bo? veya metin ??çıkar?lamad?."}), 400
-        
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    docs = text_splitter.create_documents([text])
-    
-    index_path = os.path.join(FAISS_FOLDER, session_id)
-    
-    if os.path.exists(index_path):
-        vectorstore = FAISS.load_local(index_path, embeddings_model, allow_dangerous_deserialization=True)
-        vectorstore.add_documents(docs)
-        vectorstore.save_local(index_path)
-    else:
-        vectorstore = FAISS.from_documents(docs, embeddings_model)
-        vectorstore.save_local(index_path)
-        
-    return jsonify({
-        "success": True, 
-        "message": "Belge haf?zaya al?nd?.",
-        "session_id": session_id,
-        "filename": filename
-    })
 
 
 @app.route("/api/register", methods=["POST"])
@@ -335,7 +277,7 @@ def register():
             user_vectorstore.save_local(user_index_path)
             
             for fact in facts:
-                new_memory = UserMemory(user_id=new_user.id, memory_text=fact)
+                new_memory = UserMemory(user_id=new_user.id, fact=fact)
                 db.session.add(new_memory)
             db.session.commit()
         except Exception as e:
@@ -665,9 +607,6 @@ SADECE plandaki adimlara harfiyen uyarak araclari (tools) sirayla calistir ve go
         elif "DEBATE" in route_response:
             agent_executor = None
             selected_agent_name = "Münazara (Debate)"
-        elif "DEBATE" in route_response:
-            agent_executor = None
-            selected_agent_name = "Münazara (Debate)"
         elif "LYRA" in route_response or "WRITER" in route_response:
             agent_executor = lyra_agent
             selected_agent_name = "Lyra (Metin Yazarı)"
@@ -686,7 +625,7 @@ SADECE plandaki adimlara harfiyen uyarak araclari (tools) sirayla calistir ve go
         current_session_id = chat_session_id
         
         try:
-            yield f"data: {json.dumps({'type': 'action', 'content': f'Yönetici Navi: Görev **{selected_agent_name}** departmanına atandıı.'})}\n\n"
+            yield f"data: {json.dumps({'type': 'action', 'content': f'Yönetici Navi: Görev **{selected_agent_name}** departmanına atandı.'})}\n\n"
             
             # Kullanici girisi varsa ve session yoksa yeni session olustur
             if user_id:
@@ -706,25 +645,25 @@ SADECE plandaki adimlara harfiyen uyarak araclari (tools) sirayla calistir ve go
             current_messages = list(messages_payload)
             
             if selected_agent_name == "Münazara (Debate)":
-                yield f"data: {{json.dumps({'type': 'action', 'content': '🎙️ Yönetici Navi: Konu beyin fırtınası gerektiriyor. Ajanlar Arası Münazara (Debate) başlatılıyor...'})}}\n\n"
+                yield f"data: {json.dumps({'type': 'action', 'content': '🎙️ Yönetici Navi: Konu beyin fırtınası gerektiriyor. Ajanlar Arası Münazara (Debate) başlatılıyor...'})}\n\n"
                 
-                yield f"data: {{json.dumps({'type': 'action', 'content': '🧠 Sirius (Araştırmacı): Konuyu analiz edip ilk argümanı sunuyor...'})}}\n\n"
+                yield f"data: {json.dumps({'type': 'action', 'content': '🧠 Sirius (Araştırmacı): Konuyu analiz edip ilk argümanı sunuyor...'})}\n\n"
                 sirius_prompt = f"Sen Sirius'sun. Şu konuyu detaylıca analiz et ve güçlü bir argüman/taraf sun: {question}"
                 sirius_arg = llm_with_fallbacks.invoke(sirius_prompt).content
                 if isinstance(sirius_arg, list): sirius_arg = " ".join([c.get("text", "") for c in sirius_arg if isinstance(c, dict)])
-                yield f"data: {{json.dumps({'type': 'thought', 'content': f'**Sirius:**\n{sirius_arg}'})}}\n\n"
+                yield f"data: {json.dumps({'type': 'thought', 'content': f'**Sirius:**\n{sirius_arg}'})}\n\n"
                 
-                yield f"data: {{json.dumps({'type': 'action', 'content': '💻 Orion (Yazılımcı): Sirius\'un argümanını eleştiriyor ve karşıt bir perspektif sunuyor...'})}}\n\n"
+                yield f"data: {json.dumps({'type': 'action', 'content': '💻 Orion (Yazılımcı): Sirius\'un argümanını eleştiriyor ve karşıt bir perspektif sunuyor...'})}\n\n"
                 orion_prompt = f"Sen Orion'sun (Yazılımcı/Sistem Uzmanı). Sirius şu argümanı sundu:\n{sirius_arg}\nBu argümandaki zayıf noktaları bul, eleştir ve daha iyi/farklı bir teknik yaklaşım sun."
                 orion_arg = llm_with_fallbacks.invoke(orion_prompt).content
                 if isinstance(orion_arg, list): orion_arg = " ".join([c.get("text", "") for c in orion_arg if isinstance(c, dict)])
-                yield f"data: {{json.dumps({'type': 'thought', 'content': f'**Orion:**\n{orion_arg}'})}}\n\n"
+                yield f"data: {json.dumps({'type': 'thought', 'content': f'**Orion:**\n{orion_arg}'})}\n\n"
                 
-                yield f"data: {{json.dumps({'type': 'action', 'content': '🌟 Polaris (Baş Mimar): Argümanları sentezleyip nihai kararı veriyor...'})}}\n\n"
+                yield f"data: {json.dumps({'type': 'action', 'content': '🌟 Polaris (Baş Mimar): Argümanları sentezleyip nihai kararı veriyor...'})}\n\n"
                 polaris_prompt = f"Sen Polaris'sin (Baş Mimar). Konu: {question}\nSirius'un Savunması: {sirius_arg}\nOrion'un İtirazı: {orion_arg}\nBu iki görüşü sentezle, tartışmayı özetle ve kullanıcıya en mantıklı nihai kararı sun."
                 final_verdict = llm_with_fallbacks.invoke(polaris_prompt).content
                 if isinstance(final_verdict, list): final_verdict = " ".join([c.get("text", "") for c in final_verdict if isinstance(c, dict)])
-                yield f"data: {{json.dumps({'type': 'thought', 'content': f'**Polaris:**\n{final_verdict}'})}}\n\n"
+                yield f"data: {json.dumps({'type': 'thought', 'content': f'**Polaris:**\n{final_verdict}'})}\n\n"
                 
                 final_answer_accumulated = f"### 🧠 Sirius'un Analizi:\n{sirius_arg}\n\n### 💻 Orion'un Eleştirisi:\n{orion_arg}\n\n### 🌟 Polaris'in Sentezi (Nihai Karar):\n{final_verdict}"
                 
@@ -769,8 +708,8 @@ SADECE plandaki adimlara harfiyen uyarak araclari (tools) sirayla calistir ve go
                         obs_str = f"Araç Sonucu: {obs_content}"
                         yield f"data: {json.dumps({'type': 'observation', 'content': obs_str})}\n\n"
                 
-                # GENERAL ajan ise veya çıktı yoksa doğrudan bitir
-                if "GENERAL" in route_response or not worker_output:
+                # NOVA / Genel sohbet ajanı ise veya çıktı yoksa doğrudan bitir
+                if "NOVA" in route_response or "GENERAL" in route_response or not worker_output:
                     final_answer_accumulated = worker_output
                     break
                     
