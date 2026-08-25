@@ -1,16 +1,17 @@
 var isVoiceInteraction = false;
 
 document.addEventListener("DOMContentLoaded", () => {
-// Configure marked.js to use highlight.js
-if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
-    marked.setOptions({
-        highlight: function(code, lang) {
-            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-            return hljs.highlight(code, { language }).value;
-        },
-        langPrefix: 'hljs language-'
-    });
-}
+    // Configure marked.js to use highlight.js
+    if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
+        marked.setOptions({
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            },
+            langPrefix: 'hljs language-'
+        });
+    }
+
     const taskInput = document.getElementById('task-input');
     const runBtn = document.getElementById('run-btn');
     const clearBtn = document.getElementById('clear-btn');
@@ -20,6 +21,7 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
     let conversationHistory = [];
     let currentAgentMessageDiv = null;
     let currentSessionId = null;
+    let selectedImageBase64 = null;
 
     // --- MARKED.JS CONFIGURATION (SYNTAX HIGHLIGHTING) ---
     const renderer = new marked.Renderer();
@@ -721,7 +723,6 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
         });
     }
 // --- ATTACH DROPDOWN & UPLOAD LOGIC ---
-  let selectedImageBase64 = null;
   const attachBtn = document.getElementById("attach-btn");
   const attachDropdown = document.getElementById("attach-dropdown");
   const menuImageUpload = document.getElementById("menu-image-upload");
