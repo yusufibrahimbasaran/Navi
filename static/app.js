@@ -429,16 +429,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const wrapper = btn.closest('.code-block-wrapper');
         if (!wrapper) return;
         const pre = wrapper.querySelector('pre');
-        const previewPane = wrapper.querySelector('.code-preview-pane');
-        const iframe = wrapper.querySelector('.code-preview-frame');
+        if (!pre) return;
         
-        if (!previewPane || !iframe) return;
+        let previewPane = wrapper.querySelector('.code-preview-pane');
+        let iframe = wrapper.querySelector('.code-preview-frame');
+        
+        if (!previewPane) {
+            previewPane = document.createElement('div');
+            previewPane.className = 'code-preview-pane';
+            previewPane.style.display = 'none';
+            iframe = document.createElement('iframe');
+            iframe.className = 'code-preview-frame';
+            iframe.setAttribute('sandbox', 'allow-scripts allow-modals allow-same-origin');
+            previewPane.appendChild(iframe);
+            wrapper.appendChild(previewPane);
+        }
         
         const isHidden = (previewPane.style.display === 'none' || !previewPane.style.display);
         if (isHidden) {
             // Switch to live preview
             const codeLines = Array.from(pre.querySelectorAll('.line-content')).map(l => l.innerText).join('\n');
-            const code = codeLines || pre.querySelector('code').innerText;
+            const code = codeLines || (pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText);
             const lang = (wrapper.getAttribute('data-lang') || 'html').toLowerCase();
             
             let htmlContent = code;
@@ -480,7 +491,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const wrapper = btn.closest('.code-block-wrapper');
         if (!wrapper) return;
         const codeLines = Array.from(wrapper.querySelectorAll('.line-content')).map(l => l.innerText).join('\n');
-        const text = codeLines || wrapper.querySelector('pre code').innerText;
+        const text = codeLines || (wrapper.querySelector('pre code') ? wrapper.querySelector('pre code').innerText : wrapper.querySelector('pre').innerText);
         navigator.clipboard.writeText(text).then(() => {
             const originalHTML = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-check" style="color:#10b981;"></i> Kopyalandı';
@@ -491,6 +502,31 @@ document.addEventListener("DOMContentLoaded", () => {
             }, 2000);
         });
     };
+
+    // Global event delegation for code block buttons
+    document.addEventListener('click', (e) => {
+        const previewBtn = e.target.closest('.preview-btn');
+        if (previewBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.toggleCodePreview(previewBtn);
+            return;
+        }
+        const fullscreenBtn = e.target.closest('.fullscreen-btn');
+        if (fullscreenBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.toggleCodeFullscreen(fullscreenBtn);
+            return;
+        }
+        const copyBtn = e.target.closest('.copy-btn, .copy-code-btn');
+        if (copyBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.copyCode(copyBtn);
+            return;
+        }
+    });
 
     // --- CHAT EXPORT FUNCTIONALITY ---
     window.exportChat = function(format) {
