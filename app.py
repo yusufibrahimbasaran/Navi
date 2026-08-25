@@ -420,7 +420,7 @@ def run_task():
     anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
     model_choice = data.get("model_choice", "auto")
 
-    gemini_model = ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0, max_retries=5) if api_key else None
+    gemini_model = ChatGoogleGenerativeAI(model="gemini-3.6-flash", temperature=0, max_retries=5) if api_key else None
     openai_model = ChatOpenAI(model="gpt-4o-mini", temperature=0) if openai_key else None
     anthropic_model = ChatAnthropic(model="claude-3-5-sonnet-20240620", temperature=0) if anthropic_key else None
     
@@ -431,12 +431,12 @@ def run_task():
             resp = requests.get("https://api.groq.com/openai/v1/models", headers={"Authorization": f"Bearer {groq_key}"}, timeout=5)
             if resp.status_code == 200:
                 available_models = [m["id"] for m in resp.json().get("data", [])]
-                tool_models = ["groq/compound", "qwen/qwen3.6-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
-                groq_model = next((m for m in tool_models if m in available_models), "qwen/qwen3.6-27b")
+                tool_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.6-27b"]
+                groq_model = next((m for m in tool_models if m in available_models), "openai/gpt-oss-120b")
             else:
-                groq_model = "qwen/qwen3.6-27b"
+                groq_model = "openai/gpt-oss-120b"
         except Exception:
-            groq_model = "qwen/qwen3.6-27b"
+            groq_model = "openai/gpt-oss-120b"
         groq_model_instance = ChatGroq(model=groq_model, temperature=0)
 
     # If user selected a specific model, check if key exists
