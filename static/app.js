@@ -89,46 +89,294 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
             contentContainer.appendChild(actions);
         }
         
+var isVoiceInteraction = false;
+
+document.addEventListener("DOMContentLoaded", () => {
+// Configure marked.js to use highlight.js
+if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
+    marked.setOptions({
+        highlight: function(code, lang) {
+            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language }).value;
+        },
+        langPrefix: 'hljs language-'
+    });
+}
+    const taskInput = document.getElementById('task-input');
+    const runBtn = document.getElementById('run-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const chatBox = document.getElementById('chat-box');
+    const themeToggle = document.getElementById('theme-toggle');
+
+    let conversationHistory = [];
+    let currentAgentMessageDiv = null;
+    let currentSessionId = null;
+
+    // --- MARKED.JS CONFIGURATION (SYNTAX HIGHLIGHTING) ---
+    const renderer = new marked.Renderer();
+    renderer.code = function(code, language) {
+        if (!code) code = "";
+        const validLanguage = (language && hljs.getLanguage(language)) ? language : 'plaintext';
+        let highlighted = code;
+        try {
+            highlighted = hljs.highlight(code, { language: validLanguage }).value;
+        } catch(e) {}
+        return `<div class="code-block-wrapper">
+                  <div class="code-header">
+                      <span class="code-lang">${validLanguage}</span>
+                      <button class="copy-code-btn" onclick="copyToClipboard(this)">
+                          <i class="fa-regular fa-copy"></i> Kopyala
+                      </button>
+                  </div>
+                  <pre><code class="hljs ${validLanguage}">${highlighted}</code></pre>
+                </div>`;
+    };
+    marked.setOptions({ renderer: renderer });
+
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.className = savedTheme + '-theme';
+    updateThemeIcon(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const isDark = document.body.className === 'dark-theme';
+        const newTheme = isDark ? 'light' : 'dark';
+        document.body.className = newTheme + '-theme';
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcon(newTheme);
+    });
+
+    function updateThemeIcon(theme) {
+        themeToggle.innerHTML = theme === 'dark' 
+            ? '<i class="fa-solid fa-sun"></i>' 
+            : '<i class="fa-solid fa-moon"></i>';
+    }
+
+    taskInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+        if(this.value === '') this.style.height = 'auto';
+    });
+
+    function createMessageWrapper(role) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message-wrapper';
+        const avatar = document.createElement('div');
+        avatar.className = `avatar ${role}`;
+        avatar.innerHTML = role === 'user' ? '<i class="fa-regular fa-user"></i>' : '<i class="fa-solid fa-circle-nodes"></i>';
+        const contentContainer = document.createElement('div');
+        contentContainer.style.display = 'flex';
+        contentContainer.style.flexDirection = 'column';
+        contentContainer.style.gap = '8px';
+        contentContainer.style.width = '100%';
+        
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        contentContainer.appendChild(content);
+        
+        if (role === 'agent') {
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+            actions.innerHTML = `<button class="icon-btn" title="Sesli Oku" onclick="toggleSpeech(this)"><i class="fa-solid fa-volume-high"></i></button>`;
+            contentContainer.appendChild(actions);
+        }
+        
         wrapper.appendChild(avatar);
         wrapper.appendChild(contentContainer);
         chatBox.appendChild(wrapper);
         return content;
     }
 
-    function addLogToAgent(type, text) {
-        if (!currentAgentMessageDiv) {
-            currentAgentMessageDiv = createMessageWrapper('agent');
-        }
-        const logBox = document.createElement('div');
-        logBox.className = `log-box ${type}`;
+    let currentAgentState = null;
+    let activeAbortController = null;
+
+    function createAgentMessageContainer() {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message-wrapper agent-response-wrapper';
         
-        let icon = ''; let title = '';
-        if(type === 'thought') { icon = 'fa-brain'; title = 'Navi Düşünüyor'; }
-        else if(type === 'action') { icon = 'fa-bolt'; title = 'Araç Kullanımı'; }
-        else if(type === 'observation') { icon = 'fa-eye'; title = 'Gözlem'; }
-        else if(type === 'error') { icon = 'fa-triangle-exclamation'; title = 'Hata'; }
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar agent';
+        avatar.innerHTML = '<i class="fa-solid fa-circle-nodes"></i>';
         
-        logBox.innerHTML = `
-            <div class="log-title"><i class="fa-solid ${icon}"></i> ${title}</div>
-            <div>${text.replace(/\n/g, '<br>')}</div>
+        const col = document.createElement('div');
+        col.className = 'agent-message-col';
+        
+        // 1. Canli Departman / Islem Durum Rozeti
+        const statusBadge = document.createElement('div');
+        statusBadge.className = 'agent-status-badge running';
+        statusBadge.innerHTML = `
+            <span class="status-pulse-dot"></span>
+            <span class="status-badge-text"><i class="fa-solid fa-compass"></i> Yönetici Navi: İstek analiz ediliyor...</span>
+            <span class="status-badge-timer">0.0s</span>
         `;
-        currentAgentMessageDiv.appendChild(logBox);
+        col.appendChild(statusBadge);
+
+        // 2. Katlanabilir Dusunce ve Islem Sureci Akordeonu
+        const details = document.createElement('details');
+        details.className = 'thought-accordion';
+        details.open = true;
+        details.innerHTML = `
+            <summary class="thought-summary">
+                <div class="summary-left">
+                    <i class="fa-solid fa-brain summary-brain-icon"></i>
+                    <span class="summary-title">Düşünce ve İşlem Süreci</span>
+                    <span class="steps-counter">0 adım</span>
+                </div>
+                <i class="fa-solid fa-chevron-down toggle-icon"></i>
+            </summary>
+            <div class="thought-steps-list"></div>
+        `;
+        col.appendChild(details);
+
+        // 3. Nihai Yanit Alani
+        const finalAnswerContainer = document.createElement('div');
+        finalAnswerContainer.className = 'final-answer-container message-content';
+        col.appendChild(finalAnswerContainer);
+
+        // 4. Eylemler (Sesli Oku vb.)
+        const actions = document.createElement('div');
+        actions.className = 'message-actions';
+        actions.style.display = 'none';
+        actions.innerHTML = `<button class="icon-btn" title="Sesli Oku" onclick="toggleSpeech(this)"><i class="fa-solid fa-volume-high"></i></button>`;
+        col.appendChild(actions);
+
+        wrapper.appendChild(avatar);
+        wrapper.appendChild(col);
+        chatBox.appendChild(wrapper);
+
+        const startTime = Date.now();
+        const timerEl = statusBadge.querySelector('.status-badge-timer');
+        const timerInterval = setInterval(() => {
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            if (timerEl) timerEl.textContent = `${elapsed}s`;
+        }, 100);
+
+        currentAgentState = {
+            wrapper,
+            col,
+            statusBadge,
+            statusText: statusBadge.querySelector('.status-badge-text'),
+            statusTimer: timerEl,
+            details,
+            stepsList: details.querySelector('.thought-steps-list'),
+            stepsCounter: details.querySelector('.steps-counter'),
+            finalAnswerContainer,
+            actions,
+            startTime,
+            timerInterval,
+            stepCount: 0,
+            accumulatedAnswer: ""
+        };
+
+        return currentAgentState;
+    }
+
+    function addStreamStep(type, text) {
+        if (!currentAgentState) {
+            createAgentMessageContainer();
+        }
+        
+        currentAgentState.stepCount++;
+        if (currentAgentState.stepsCounter) {
+            currentAgentState.stepsCounter.textContent = `${currentAgentState.stepCount} adım`;
+        }
+
+        let icon = 'fa-brain';
+        let title = 'Düşünce';
+        let badgeText = '';
+
+        if (type === 'action') {
+            icon = 'fa-bolt';
+            title = 'Araç / Eylem';
+            if (text.includes('Polaris')) { badgeText = '🌟 Polaris (Baş Mimar): Strateji yürütülüyor...'; }
+            else if (text.includes('Orion')) { badgeText = '💻 Orion (Yazılımcı): Kod çalıştırılıyor...'; }
+            else if (text.includes('Sirius')) { badgeText = '🧠 Sirius (Araştırmacı): Araştırma yapılıyor...'; }
+            else if (text.includes('Vega')) { badgeText = '📐 Vega (Matematik): Hesaplama yapılıyor...'; }
+            else if (text.includes('Lyra')) { badgeText = '✍️ Lyra (Yazar): İçerik hazırlanıyor...'; }
+            else if (text.includes('Denetmen')) { badgeText = '🔍 Denetmen (Reviewer): Kalite kontrolü yapılıyor...'; }
+            else if (text.includes('Münazara') || text.includes('Debate')) { badgeText = '🎙️ Münazara Odası: Ajanlar tartışıyor...'; }
+            else if (text.includes('Araç Kullanılıyor')) {
+                const toolNameMatch = text.match(/Araç Kullanılıyor:\s*([^\n]+)/);
+                const toolName = toolNameMatch ? toolNameMatch[1] : 'Araç';
+                badgeText = `⚡ Araç Çalıştırılıyor: ${toolName}`;
+            }
+        } else if (type === 'observation') {
+            icon = 'fa-eye';
+            title = 'Gözlem Sonucu';
+        } else if (type === 'error') {
+            icon = 'fa-triangle-exclamation';
+            title = 'Hata';
+            badgeText = '❌ Hata Oluştu';
+        } else if (type === 'thought') {
+            icon = 'fa-brain';
+            title = 'Navi Düşünüyor';
+        }
+
+        if (badgeText && currentAgentState.statusText) {
+            currentAgentState.statusText.innerHTML = badgeText;
+        }
+
+        const stepEl = document.createElement('div');
+        stepEl.className = `step-item ${type}`;
+        
+        let sanitizedBody = '';
+        try {
+            sanitizedBody = DOMPurify.sanitize(marked.parse(text));
+        } catch(e) {
+            sanitizedBody = text.replace(/\n/g, '<br>');
+        }
+
+        stepEl.innerHTML = `
+            <div class="step-header">
+                <div class="step-icon-badge ${type}"><i class="fa-solid ${icon}"></i></div>
+                <span class="step-title">${title}</span>
+            </div>
+            <div class="step-body">${sanitizedBody}</div>
+        `;
+
+        currentAgentState.stepsList.appendChild(stepEl);
         scrollToBottom();
     }
 
     function addFinalAnswer(text) {
-        if (!currentAgentMessageDiv) {
-            currentAgentMessageDiv = createMessageWrapper('agent');
+        if (!currentAgentState) {
+            createAgentMessageContainer();
         }
-        const answerBox = document.createElement('div');
+        currentAgentState.accumulatedAnswer = text;
         try {
-            answerBox.innerHTML = DOMPurify.sanitize(marked.parse(text));
+            currentAgentState.finalAnswerContainer.innerHTML = DOMPurify.sanitize(marked.parse(text));
         } catch (e) {
-            answerBox.innerHTML = DOMPurify.sanitize(text.replace(/\n/g, '<br>'));
+            currentAgentState.finalAnswerContainer.innerHTML = DOMPurify.sanitize(text.replace(/\n/g, '<br>'));
         }
-        currentAgentMessageDiv.appendChild(answerBox);
         addCopyButtons();
         scrollToBottom();
+    }
+
+    function finishAgentStream(success = true) {
+        if (!currentAgentState) return;
+        if (currentAgentState.timerInterval) {
+            clearInterval(currentAgentState.timerInterval);
+            currentAgentState.timerInterval = null;
+        }
+        const totalTime = ((Date.now() - currentAgentState.startTime) / 1000).toFixed(1);
+        currentAgentState.statusBadge.classList.remove('running');
+        currentAgentState.statusBadge.classList.add(success ? 'completed' : 'aborted');
+        
+        const pulse = currentAgentState.statusBadge.querySelector('.status-pulse-dot');
+        if (pulse) pulse.remove();
+
+        if (success) {
+            currentAgentState.statusText.innerHTML = `<i class="fa-solid fa-circle-check" style="color: var(--success);"></i> Tamamlandı (${currentAgentState.stepCount} adım)`;
+        } else {
+            currentAgentState.statusText.innerHTML = `<i class="fa-solid fa-circle-stop" style="color: var(--danger);"></i> Durduruldu (${totalTime}s)`;
+        }
+        
+        if (currentAgentState.statusTimer) {
+            currentAgentState.statusTimer.textContent = `${totalTime}s`;
+        }
+
+        if (currentAgentState.actions) {
+            currentAgentState.actions.style.display = 'flex';
+        }
     }
 
 // Function to add copy buttons to code blocks
@@ -157,31 +405,37 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
     clearBtn.addEventListener('click', () => {
         conversationHistory = [];
         currentSessionId = null;
+        currentAgentState = null;
         chatBox.innerHTML = `<div class="welcome-screen" id="welcome-screen"> <div class="welcome-icon-box pulse-animation"> <i class="fa-solid fa-circle-nodes"></i> </div> <h1 class="gradient-text">Merhaba, Ben Navi!</h1> <p>Fikirlerinizi gerçeğe dönüştürmek için tasarlanmış kişisel yapay zeka asistanınızım.<br>Aşağıdaki örneklerden biriyle başlayabilirsiniz:</p> <div class="prompt-suggestions"> <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Python ile yılan oyunu yaz</button> <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">Kara delikler nasıl oluşur?</button> <button class="prompt-chip" onclick="document.getElementById('task-input').value=this.innerText; document.getElementById('task-input').focus();">1'den 100'e kadar asal sayıları bul</button> </div> </div>`;
     });
 
     runBtn.addEventListener('click', async () => {
+        // Eger uretim devam ediyorsa ve kullanici durdur tusuna bastiysa:
+        if (runBtn.classList.contains('stop-mode') && activeAbortController) {
+            activeAbortController.abort();
+            addStreamStep('error', '🛑 Yanıt üretimi kullanıcı tarafından durduruldu.');
+            finishAgentStream(false);
+            resetUI();
+            return;
+        }
+
         const question = taskInput.value.trim();
         if (question === "") return;
         const welcome = document.getElementById("welcome-screen");
         if(welcome) welcome.style.display = "none";
 
-        runBtn.disabled = true;
-        runBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        activeAbortController = new AbortController();
+        runBtn.disabled = false;
+        runBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+        runBtn.classList.add('stop-mode');
+        runBtn.title = 'Üretimi Durdur';
         taskInput.disabled = true;
         
         const userContent = createMessageWrapper('user');
         userContent.innerHTML = DOMPurify.sanitize(`<p>${question}</p>`);
         
-        currentAgentMessageDiv = null;
-
-        const typingWrapper = createMessageWrapper('agent');
-        typingWrapper.id = "typing-indicator-wrapper";
-        typingWrapper.innerHTML = `
-            <div class="typing-indicator">
-                <span></span><span></span><span></span>
-            </div>
-        `;
+        currentAgentState = null;
+        createAgentMessageContainer();
         scrollToBottom();
 
         const modelChoice = document.getElementById('model-selector') ? document.getElementById('model-selector').value : "auto";
@@ -190,6 +444,7 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
             const response = await fetch('/run', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: activeAbortController.signal,
                 body: JSON.stringify({ 
                     question: question, 
                     history: conversationHistory,
@@ -207,18 +462,8 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
             if (!response.ok) {
                 const errorData = await response.json();
                 const errorMsg = errorData.error || 'Bilinmeyen bir sunucu hatası oluştu.';
-                addLogToAgent('error', errorMsg);
-                
-                // Ayrıca ana sohbet ekranında göster ki kullanıcı takıldığını düşünmesin
-                
-                if (typeof msgDiv !== 'undefined') {
-                    msgDiv.innerHTML = DOMPurify.sanitize(`<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`);
-                } else {
-                    const errorDiv = document.createElement("div");
-                    errorDiv.className = "message system-message";
-                    errorDiv.innerHTML = DOMPurify.sanitize(`<span style="color: red;">❌ Sistem Hatası: ${errorMsg}</span>`);
-                    chatBox.appendChild(errorDiv);
-                }
+                addStreamStep('error', errorMsg);
+                finishAgentStream(false);
                 resetUI();
                 return;
             }
@@ -227,17 +472,10 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
             const decoder = new TextDecoder("utf-8");
             let buffer = "";
             let finalAnswer = "";
-            let isFirstChunk = true;
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                
-                if (isFirstChunk) {
-                    const ti = document.getElementById("typing-indicator-wrapper");
-                    if (ti) ti.remove();
-                    isFirstChunk = false;
-                }
 
                 buffer += decoder.decode(value, { stream: true });
                 let lines = buffer.split("\n\n");
@@ -255,17 +493,17 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
                                     addFinalAnswer(answerText);
                                     finalAnswer += data.content + "\n";
                                 } else {
-                                    addLogToAgent('thought', data.content);
+                                    addStreamStep('thought', data.content);
                                     finalAnswer += data.content + "\n";
                                 }
                             }
                             else if (data.type === 'action' || data.type === 'observation' || data.type === 'error') {
-                                addLogToAgent(data.type, data.content);
+                                addStreamStep(data.type, data.content);
                             }
                             else if (data.type === 'session_id') {
                                 if (!currentSessionId && data.content) {
                                     currentSessionId = data.content;
-                                    loadChatHistory();
+                                    if (typeof loadChatHistory === 'function') loadChatHistory();
                                 }
                             }
 
@@ -273,6 +511,8 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
                     }
                 }
             }
+
+            finishAgentStream(true);
 
             conversationHistory.push({ role: 'user', content: question });
             conversationHistory.push({ role: 'model', content: finalAnswer });
@@ -283,17 +523,23 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
             }
 
         } catch (error) {
-            const ti = document.getElementById("typing-indicator-wrapper");
-            if (ti) ti.remove();
-            addLogToAgent('error', `Bağlantı Hatası: ${error.message}`);
+            if (error.name === 'AbortError') {
+                console.log('Stream aborted by user.');
+            } else {
+                addStreamStep('error', `Bağlantı Hatası: ${error.message}`);
+                finishAgentStream(false);
+            }
         } finally {
             resetUI();
         }
     });
 
     function resetUI() {
+        activeAbortController = null;
         runBtn.disabled = false;
+        runBtn.classList.remove('stop-mode');
         runBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
+        runBtn.title = 'Gönder';
         taskInput.disabled = false;
         taskInput.value = ''; 
         taskInput.style.height = 'auto';
@@ -306,12 +552,6 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
             runBtn.click();
         }
     });
-
-    const loginModalBtn = document.getElementById("login-modal-btn");
-    const authModal = document.getElementById("auth-modal");
-    const modalCloseBtn = document.getElementById("modal-close-btn");
-    const tabBtns = document.querySelectorAll(".tab-btn");
-    const authForms = document.querySelectorAll(".auth-form");
 
     if (loginModalBtn && authModal) {
         loginModalBtn.addEventListener("click", () => { authModal.classList.add("show"); tabBtns[0].click(); });
