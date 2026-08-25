@@ -708,100 +708,45 @@ document.addEventListener("DOMContentLoaded", () => {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    function getDynamicGreetingText() {
-        const hour = new Date().getHours();
-        if (hour >= 5 && hour < 12) return "Günaydın! Ben Navi 🧭";
-        if (hour >= 12 && hour < 18) return "İyi Günler! Ben Navi 🧭";
-        if (hour >= 18 && hour < 23) return "İyi Akşamlar! Ben Navi 🧭";
-        return "İyi Geceler! Ben Navi 🧭";
-    }
-
     window.setPrompt = function(text) {
         if (!taskInput) return;
         taskInput.value = text;
         taskInput.focus();
     };
 
+    function getDynamicGreetingText() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return "Günaydın! Bugün ne üzerine çalışıyoruz?";
+        if (hour >= 12 && hour < 18) return "İyi Günler! Bugün ne üzerine çalışıyoruz?";
+        if (hour >= 18 && hour < 23) return "İyi Akşamlar! Bugün ne üzerine çalışıyoruz?";
+        return "İyi Geceler! Bugün ne üzerine çalışıyoruz?";
+    }
+
     function getWelcomeScreenHTML() {
         return `<div class="welcome-screen" id="welcome-screen">
-            <div class="welcome-hero-badge">
-                <span class="badge-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> Navi 3.5</span>
-                <span class="badge-separator">•</span>
-                <span class="badge-status"><span class="status-dot-active"></span> 8 Uzman Ajan & Münazara Aktif</span>
-            </div>
-            <div class="welcome-icon-box">
-                <div class="welcome-icon-aura"></div>
-                <i class="fa-solid fa-circle-nodes"></i>
+            <div class="welcome-icon-minimal">
+                <i class="fa-solid fa-compass"></i>
             </div>
             <h1 class="welcome-title gradient-text" id="welcome-dynamic-greeting">${getDynamicGreetingText()}</h1>
-            <p class="welcome-subtitle">Fikirlerinizi, kodlarınızı ve stratejilerinizi gerçeğe dönüştüren yeni nesil çoklu-ajan stüdyosu.<br>Bugün hangi projeyi hayata geçiriyoruz?</p>
+            <p class="welcome-subtitle">Yazılım, münazara, matematik ve strateji için tasarlanmış çoklu-ajan asistanınız.</p>
             
-            <!-- AGENTS SHOWCASE STRIP -->
-            <div class="welcome-agents-strip">
-                <div class="agent-pill sirius" onclick="setPrompt('Son yapay zeka gelişmeleri hakkında web araştırması yap ve özetle')">
-                    <span class="pill-dot sirius"></span>
-                    <span class="pill-name">Sirius</span>
-                    <small>Araştırma</small>
-                </div>
-                <div class="agent-pill orion" onclick="setPrompt('HTML, CSS ve JS ile canlı çalışan modern bir sayaç bileşeni kodla')">
-                    <span class="pill-dot orion"></span>
-                    <span class="pill-name">Orion</span>
-                    <small>Yazılım</small>
-                </div>
-                <div class="agent-pill debate" onclick="setPrompt('PostgreSQL mi MongoDB mi daha avantajlı, Sirius ve Orion ile münazara yapın')">
-                    <span class="pill-dot debate"></span>
-                    <span class="pill-name">Münazara</span>
-                    <small>Arena</small>
-                </div>
-                <div class="agent-pill vega" onclick="setPrompt('Kuantum fiziğindeki Schrödinger dalga denklemini KaTeX formülleriyle adım adım açıkla')">
-                    <span class="pill-dot vega"></span>
-                    <span class="pill-name">Vega</span>
-                    <small>Matematik</small>
-                </div>
-                <div class="agent-pill polaris" onclick="setPrompt('Büyük ölçekli bir e-ticaret mikroservis mimarisi planı ve stratejisi oluştur')">
-                    <span class="pill-dot polaris"></span>
-                    <span class="pill-name">Polaris</span>
-                    <small>Baş Mimar</small>
-                </div>
-            </div>
-
-            <!-- BENTO GRID PROMPT CARDS -->
-            <div class="bento-grid">
-                <div class="bento-card" onclick="setPrompt('HTML, CSS ve JavaScript kullanarak canlı çalışan şık bir interaktif sayaç kartı kodla')">
-                    <div class="bento-icon orion"><i class="fa-solid fa-code"></i></div>
-                    <div class="bento-content">
-                        <h4>Canlı Web Bileşeni Kodla</h4>
-                        <p>Canlı Sandbox önizlemeli modern bir HTML/CSS kartı tasarla</p>
-                    </div>
-                    <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-                </div>
-
-                <div class="bento-card" onclick="setPrompt('Monolitik mimari mi Mikroservis mimarisi mi, Sirius ve Orion ile münazara yapın')">
-                    <div class="bento-icon debate"><i class="fa-solid fa-scale-balanced"></i></div>
-                    <div class="bento-content">
-                        <h4>Ajanlar Arası Münazara</h4>
-                        <p>Sirius ve Orion'un tez ve antitezle çarpıştığı VS arenası</p>
-                    </div>
-                    <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-                </div>
-
-                <div class="bento-card" onclick="setPrompt('Euler özdeşliğini ve karmaşık sayıların geometrisini KaTeX denklemleriyle açıkla')">
-                    <div class="bento-icon vega"><i class="fa-solid fa-square-root-variable"></i></div>
-                    <div class="bento-content">
-                        <h4>KaTeX ile Matematik & Bilim</h4>
-                        <p>Sembolik hesaplama ve yüksek çözünürlüklü formüller</p>
-                    </div>
-                    <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-                </div>
-
-                <div class="bento-card" onclick="setPrompt('Otonom AI ajanlarının 2026 yılındaki sektör etkileri hakkında kapsamlı bir araştırma raporu hazırla')">
-                    <div class="bento-icon sirius"><i class="fa-solid fa-brain"></i></div>
-                    <div class="bento-content">
-                        <h4>Derin Araştırma & Strateji</h4>
-                        <p>Web taraması, sentez ve uygulanabilir yol haritası</p>
-                    </div>
-                    <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-                </div>
+            <div class="welcome-quick-pills">
+                <button class="quick-pill" onclick="setPrompt('HTML, CSS ve JavaScript kullanarak canlı çalışan şık bir interaktif sayaç kartı kodla')">
+                    <i class="fa-solid fa-code"></i>
+                    <span>Web Bileşeni Kodla</span>
+                </button>
+                <button class="quick-pill" onclick="setPrompt('PostgreSQL mi MongoDB mi daha avantajlı, Sirius ve Orion ile münazara yapın')">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    <span>Ajanlar Arası Münazara</span>
+                </button>
+                <button class="quick-pill" onclick="setPrompt('Kuantum fiziğindeki Schrödinger dalga denklemini KaTeX formülleriyle açıkla')">
+                    <i class="fa-solid fa-square-root-variable"></i>
+                    <span>KaTeX ile Matematik</span>
+                </button>
+                <button class="quick-pill" onclick="setPrompt('2026 yılındaki otonom yapay zeka ajan trendleri hakkında derin araştırma yap ve özetle')">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>Derin Araştırma Yap</span>
+                </button>
             </div>
         </div>`;
     }
