@@ -469,6 +469,187 @@ body.light-theme .thought-accordion {
     margin-top: 4px;
 }
 
+/* ================= PACKAGE B: AGENT COLOR IDENTITIES & DEBATE ARENA ================= */
+
+/* --- AGENT COLOR IDENTITIES (AVATARS & STATUS BADGES) --- */
+
+/* Sirius: Electric Purple */
+.avatar.agent.agent-sirius { background: linear-gradient(135deg, #8b5cf6, #6d28d9); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+.agent-status-badge.agent-sirius { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); color: #c4b5fd; }
+.agent-status-badge.agent-sirius .status-pulse-dot { background-color: #8b5cf6; box-shadow: 0 0 10px #8b5cf6; }
+
+/* Orion: Cyber Emerald */
+.avatar.agent.agent-orion { background: linear-gradient(135deg, #10b981, #047857); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+.agent-status-badge.agent-orion { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; }
+.agent-status-badge.agent-orion .status-pulse-dot { background-color: #10b981; box-shadow: 0 0 10px #10b981; }
+
+/* Vega: Cyan / Math */
+.avatar.agent.agent-vega { background: linear-gradient(135deg, #06b6d4, #0369a1); box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+.agent-status-badge.agent-vega { background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.4); color: #67e8f9; }
+.agent-status-badge.agent-vega .status-pulse-dot { background-color: #06b6d4; box-shadow: 0 0 10px #06b6d4; }
+
+/* Polaris: Solar Gold */
+.avatar.agent.agent-polaris { background: linear-gradient(135deg, #f59e0b, #b45309); box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+.agent-status-badge.agent-polaris { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
+.agent-status-badge.agent-polaris .status-pulse-dot { background-color: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+
+/* Lyra: Ruby Rose */
+.avatar.agent.agent-lyra { background: linear-gradient(135deg, #f43f5e, #be123c); box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
+.agent-status-badge.agent-lyra { background: rgba(244, 63, 94, 0.15); border-color: rgba(244, 63, 94, 0.4); color: #fecdd3; }
+.agent-status-badge.agent-lyra .status-pulse-dot { background-color: #f43f5e; box-shadow: 0 0 10px #f43f5e; }
+
+/* Rigel: Solar Orange */
+.avatar.agent.agent-rigel { background: linear-gradient(135deg, #f97316, #c2410c); box-shadow: 0 0 15px rgba(249, 115, 22, 0.4); }
+.agent-status-badge.agent-rigel { background: rgba(249, 115, 22, 0.15); border-color: rgba(249, 115, 22, 0.4); color: #fed7aa; }
+.agent-status-badge.agent-rigel .status-pulse-dot { background-color: #f97316; box-shadow: 0 0 10px #f97316; }
+
+/* Nova: Indigo Navy */
+.avatar.agent.agent-nova { background: linear-gradient(135deg, #6366f1, #4338ca); box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+.agent-status-badge.agent-nova { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #c7d2fe; }
+.agent-status-badge.agent-nova .status-pulse-dot { background-color: #6366f1; box-shadow: 0 0 10px #6366f1; }
+
+/* Reviewer: Teal Shield */
+.avatar.agent.agent-reviewer { background: linear-gradient(135deg, #14b8a6, #0f766e); box-shadow: 0 0 15px rgba(20, 184, 166, 0.4); }
+.agent-status-badge.agent-reviewer { background: rgba(20, 184, 166, 0.15); border-color: rgba(20, 184, 166, 0.4); color: #99f6e4; }
+.agent-status-badge.agent-reviewer .status-pulse-dot { background-color: #14b8a6; box-shadow: 0 0 10px #14b8a6; }
+
+/* Debate Mode: Dual Flame */
+.avatar.agent.agent-debate { background: linear-gradient(135deg, #f43f5e, #8b5cf6); box-shadow: 0 0 18px rgba(244, 63, 94, 0.5); }
+.agent-status-badge.agent-debate { background: linear-gradient(90deg, rgba(139, 92, 246, 0.2), rgba(244, 63, 94, 0.2)); border-color: rgba(244, 63, 94, 0.4); color: #fff; }
+.agent-status-badge.agent-debate .status-pulse-dot { background-color: #f43f5e; box-shadow: 0 0 10px #f43f5e; }
+
+/* --- DEBATE ARENA STYLES --- */
+.debate-arena {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 16px;
+    margin: 8px 0;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    animation: fadeInArena 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInArena {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.debate-arena-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.debate-badge {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.debate-vs-tag {
+    background: linear-gradient(135deg, #ef4444, #8b5cf6);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 1px;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.debate-arena-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.debate-card {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.25s ease;
+}
+
+body.light-theme .debate-card {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.debate-card.sirius {
+    border-left: 4px solid #8b5cf6;
+    background-image: linear-gradient(135deg, rgba(139, 92, 246, 0.06) 0%, transparent 100%);
+}
+
+.debate-card.orion {
+    border-left: 4px solid #10b981;
+    background-image: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, transparent 100%);
+}
+
+.debate-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.debate-card-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #fff;
+}
+
+.debate-card-icon.sirius { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.debate-card-icon.orion { background: linear-gradient(135deg, #10b981, #047857); }
+
+.debate-agent-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.debate-agent-info strong {
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.debate-agent-info small {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.debate-card-body {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.debate-card-body p {
+    margin-bottom: 8px;
+}
+.debate-card-body p:last-child {
+    margin-bottom: 0;
+}
+
 /* LOG BUBBLES (Legacy) */
 .log-box {
     background: rgba(255, 255, 255, 0.08);

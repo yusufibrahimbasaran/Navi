@@ -163,6 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
         currentAgentState = {
             wrapper,
             col,
+            avatar,
             statusBadge,
             statusText: statusBadge.querySelector('.status-badge-text'),
             statusTimer: timerEl,
@@ -178,6 +179,77 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         return currentAgentState;
+    }
+
+    function setAgentTheme(agentKey) {
+        if (!currentAgentState) return;
+        const allAgentClasses = ['agent-sirius', 'agent-orion', 'agent-vega', 'agent-polaris', 'agent-lyra', 'agent-rigel', 'agent-nova', 'agent-reviewer', 'agent-debate'];
+        allAgentClasses.forEach(cls => {
+            currentAgentState.statusBadge.classList.remove(cls);
+            if (currentAgentState.avatar) currentAgentState.avatar.classList.remove(cls);
+        });
+        if (agentKey) {
+            currentAgentState.statusBadge.classList.add(`agent-${agentKey}`);
+            if (currentAgentState.avatar) currentAgentState.avatar.classList.add(`agent-${agentKey}`);
+        }
+    }
+
+    function addDebateStep(speaker, content) {
+        if (!currentAgentState) createAgentMessageContainer();
+        setAgentTheme('debate');
+        
+        let arena = currentAgentState.stepsList.querySelector('.debate-arena');
+        if (!arena) {
+            arena = document.createElement('div');
+            arena.className = 'debate-arena';
+            arena.innerHTML = `
+                <div class="debate-arena-header">
+                    <span class="debate-badge"><i class="fa-solid fa-bolt"></i> Münazara Arenası</span>
+                    <span class="debate-vs-tag">VS</span>
+                </div>
+                <div class="debate-arena-grid">
+                    <div class="debate-card sirius" id="debate-sirius-card">
+                        <div class="debate-card-header">
+                            <span class="debate-card-icon sirius"><i class="fa-solid fa-brain"></i></span>
+                            <div class="debate-agent-info">
+                                <strong>Sirius</strong>
+                                <small>Tez / Araştırmacı</small>
+                            </div>
+                        </div>
+                        <div class="debate-card-body"><em>Argüman bekleniyor...</em></div>
+                    </div>
+                    <div class="debate-card orion" id="debate-orion-card">
+                        <div class="debate-card-header">
+                            <span class="debate-card-icon orion"><i class="fa-solid fa-code"></i></span>
+                            <div class="debate-agent-info">
+                                <strong>Orion</strong>
+                                <small>Antitez / Yazılımcı</small>
+                            </div>
+                        </div>
+                        <div class="debate-card-body"><em>Argüman bekleniyor...</em></div>
+                    </div>
+                </div>
+            `;
+            currentAgentState.stepsList.appendChild(arena);
+        }
+        
+        const cardBody = speaker === 'sirius' 
+            ? arena.querySelector('#debate-sirius-card .debate-card-body')
+            : arena.querySelector('#debate-orion-card .debate-card-body');
+            
+        if (cardBody) {
+            try {
+                cardBody.innerHTML = DOMPurify.sanitize(marked.parse(content));
+            } catch(e) {
+                cardBody.innerHTML = DOMPurify.sanitize(content.replace(/\n/g, '<br>'));
+            }
+        }
+        
+        currentAgentState.stepCount++;
+        if (currentAgentState.stepsCounter) {
+            currentAgentState.stepsCounter.textContent = `${currentAgentState.stepCount} adım`;
+        }
+        scrollToBottom();
     }
 
     function addStreamStep(type, text) {
@@ -197,13 +269,42 @@ document.addEventListener("DOMContentLoaded", () => {
         if (type === 'action') {
             icon = 'fa-bolt';
             title = 'Araç / Eylem';
-            if (text.includes('Polaris')) { badgeText = '🌟 Polaris (Baş Mimar): Strateji yürütülüyor...'; }
-            else if (text.includes('Orion')) { badgeText = '💻 Orion (Yazılımcı): Kod çalıştırılıyor...'; }
-            else if (text.includes('Sirius')) { badgeText = '🧠 Sirius (Araştırmacı): Araştırma yapılıyor...'; }
-            else if (text.includes('Vega')) { badgeText = '📐 Vega (Matematik): Hesaplama yapılıyor...'; }
-            else if (text.includes('Lyra')) { badgeText = '✍️ Lyra (Yazar): İçerik hazırlanıyor...'; }
-            else if (text.includes('Denetmen')) { badgeText = '🔍 Denetmen (Reviewer): Kalite kontrolü yapılıyor...'; }
-            else if (text.includes('Münazara') || text.includes('Debate')) { badgeText = '🎙️ Münazara Odası: Ajanlar tartışıyor...'; }
+            if (text.includes('Polaris')) { 
+                badgeText = '🌟 Polaris (Baş Mimar): Strateji yürütülüyor...'; 
+                setAgentTheme('polaris');
+            }
+            else if (text.includes('Orion')) { 
+                badgeText = '💻 Orion (Yazılımcı): Kod çalıştırılıyor...'; 
+                setAgentTheme('orion');
+            }
+            else if (text.includes('Sirius')) { 
+                badgeText = '🧠 Sirius (Araştırmacı): Araştırma yapılıyor...'; 
+                setAgentTheme('sirius');
+            }
+            else if (text.includes('Vega')) { 
+                badgeText = '📐 Vega (Matematik): Hesaplama yapılıyor...'; 
+                setAgentTheme('vega');
+            }
+            else if (text.includes('Lyra')) { 
+                badgeText = '✍️ Lyra (Yazar): İçerik hazırlanıyor...'; 
+                setAgentTheme('lyra');
+            }
+            else if (text.includes('Rigel')) { 
+                badgeText = '👁️ Rigel (Görsel Analist): Görüntü taranıyor...'; 
+                setAgentTheme('rigel');
+            }
+            else if (text.includes('Nova')) { 
+                badgeText = '💬 Nova (Genel Asistan): Yanıt hazırlanıyor...'; 
+                setAgentTheme('nova');
+            }
+            else if (text.includes('Denetmen')) { 
+                badgeText = '🔍 Denetmen (Reviewer): Kalite kontrolü yapılıyor...'; 
+                setAgentTheme('reviewer');
+            }
+            else if (text.includes('Münazara') || text.includes('Debate')) { 
+                badgeText = '🎙️ Münazara Arenası: Ajanlar tartışıyor...'; 
+                setAgentTheme('debate');
+            }
             else if (text.includes('Araç Kullanılıyor')) {
                 const toolNameMatch = text.match(/Araç Kullanılıyor:\s*([^\n]+)/);
                 const toolName = toolNameMatch ? toolNameMatch[1] : 'Araç';
@@ -406,6 +507,14 @@ document.addEventListener("DOMContentLoaded", () => {
                                     addStreamStep('thought', data.content);
                                     finalAnswer += data.content + "\n";
                                 }
+                            }
+                            else if (data.type === 'debate_sirius') {
+                                addDebateStep('sirius', data.content);
+                                finalAnswer += `### 🧠 Sirius'un Tezi:\n${data.content}\n\n`;
+                            }
+                            else if (data.type === 'debate_orion') {
+                                addDebateStep('orion', data.content);
+                                finalAnswer += `### 💻 Orion'un Antitezi:\n${data.content}\n\n`;
                             }
                             else if (data.type === 'action' || data.type === 'observation' || data.type === 'error') {
                                 addStreamStep(data.type, data.content);

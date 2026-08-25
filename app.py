@@ -645,27 +645,27 @@ SADECE plandaki adimlara harfiyen uyarak araclari (tools) sirayla calistir ve go
             current_messages = list(messages_payload)
             
             if selected_agent_name == "Münazara (Debate)":
-                yield f"data: {json.dumps({'type': 'action', 'content': '🎙️ Yönetici Navi: Konu beyin fırtınası gerektiriyor. Ajanlar Arası Münazara (Debate) başlatılıyor...'})}\n\n"
+                yield f"data: {json.dumps({'type': 'action', 'content': '🎙️ Yönetici Navi: Konu beyin fırtınası gerektiriyor. Ajanlar Arası Münazara (Debate Arena) başlatılıyor...'})}\n\n"
                 
-                yield f"data: {json.dumps({'type': 'action', 'content': '🧠 Sirius (Araştırmacı): Konuyu analiz edip ilk argümanı sunuyor...'})}\n\n"
-                sirius_prompt = f"Sen Sirius'sun. Şu konuyu detaylıca analiz et ve güçlü bir argüman/taraf sun: {question}"
+                yield f"data: {json.dumps({'type': 'action', 'content': '🧠 Sirius (Araştırmacı): Konuyu analiz edip tez argümanını sunuyor...'})}\n\n"
+                sirius_prompt = f"Sen Sirius'sun (Araştırmacı). Şu konuyu detaylıca incele ve güçlü bir tez/savunma argümanı sun: {question}"
                 sirius_arg = llm_with_fallbacks.invoke(sirius_prompt).content
                 if isinstance(sirius_arg, list): sirius_arg = " ".join([c.get("text", "") for c in sirius_arg if isinstance(c, dict)])
-                yield f"data: {json.dumps({'type': 'thought', 'content': f'**Sirius:**\n{sirius_arg}'})}\n\n"
+                yield f"data: {json.dumps({'type': 'debate_sirius', 'content': sirius_arg})}\n\n"
                 
-                yield f"data: {json.dumps({'type': 'action', 'content': '💻 Orion (Yazılımcı): Sirius\'un argümanını eleştiriyor ve karşıt bir perspektif sunuyor...'})}\n\n"
-                orion_prompt = f"Sen Orion'sun (Yazılımcı/Sistem Uzmanı). Sirius şu argümanı sundu:\n{sirius_arg}\nBu argümandaki zayıf noktaları bul, eleştir ve daha iyi/farklı bir teknik yaklaşım sun."
+                yield f"data: {json.dumps({'type': 'action', 'content': '💻 Orion (Yazılımcı): Sirius\'un tezini eleştirip antitez sunuyor...'})}\n\n"
+                orion_prompt = f"Sen Orion'sun (Yazılımcı/Sistem Uzmanı). Sirius şu argümanı sundu:\n{sirius_arg}\nBu argümandaki zayıf noktaları bul, eleştir ve daha pratik/farklı bir karşıt perspektif (antitez) sun."
                 orion_arg = llm_with_fallbacks.invoke(orion_prompt).content
                 if isinstance(orion_arg, list): orion_arg = " ".join([c.get("text", "") for c in orion_arg if isinstance(c, dict)])
-                yield f"data: {json.dumps({'type': 'thought', 'content': f'**Orion:**\n{orion_arg}'})}\n\n"
+                yield f"data: {json.dumps({'type': 'debate_orion', 'content': orion_arg})}\n\n"
                 
                 yield f"data: {json.dumps({'type': 'action', 'content': '🌟 Polaris (Baş Mimar): Argümanları sentezleyip nihai kararı veriyor...'})}\n\n"
-                polaris_prompt = f"Sen Polaris'sin (Baş Mimar). Konu: {question}\nSirius'un Savunması: {sirius_arg}\nOrion'un İtirazı: {orion_arg}\nBu iki görüşü sentezle, tartışmayı özetle ve kullanıcıya en mantıklı nihai kararı sun."
+                polaris_prompt = f"Sen Polaris'sin (Baş Mimar). Konu: {question}\nSirius'un Tezi: {sirius_arg}\nOrion'un Antitezi: {orion_arg}\nBu iki görüşü tarafsızca değerlendir, sentezle ve kullanıcıya uygulanabilir en mantıklı nihai kararı ve özeti sun."
                 final_verdict = llm_with_fallbacks.invoke(polaris_prompt).content
                 if isinstance(final_verdict, list): final_verdict = " ".join([c.get("text", "") for c in final_verdict if isinstance(c, dict)])
-                yield f"data: {json.dumps({'type': 'thought', 'content': f'**Polaris:**\n{final_verdict}'})}\n\n"
+                yield f"data: {json.dumps({'type': 'thought', 'content': f'Answer:\n### ⚖️ Polaris\'in Sentezi ve Nihai Kararı\n\n{final_verdict}'})}\n\n"
                 
-                final_answer_accumulated = f"### 🧠 Sirius'un Analizi:\n{sirius_arg}\n\n### 💻 Orion'un Eleştirisi:\n{orion_arg}\n\n### 🌟 Polaris'in Sentezi (Nihai Karar):\n{final_verdict}"
+                final_answer_accumulated = f"### 🧠 Sirius'un Tezi:\n{sirius_arg}\n\n### 💻 Orion'un Antitezi:\n{orion_arg}\n\n### ⚖️ Polaris'in Sentezi (Nihai Karar):\n{final_verdict}"
                 
             elif selected_agent_name == "Polaris (Baş Mimar)":
                 yield f"data: {json.dumps({'type': 'action', 'content': '🌟 Polaris: Görev analiz ediliyor ve stratejik planı oluşturuluyor...'})}\n\n"
